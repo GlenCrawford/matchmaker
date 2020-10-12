@@ -5,3 +5,4 @@ matplotlib==3.2.2
 seaborn==0.11.0
 torch==1.6.0
 torchsummary==1.5.1
+pytorch-lightning==0.10.0
