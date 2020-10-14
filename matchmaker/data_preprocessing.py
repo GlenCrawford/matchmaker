@@ -9,7 +9,8 @@ INPUT_DATA_PATH = 'data/okcupid_profiles.csv'
 
 INPUT_DATA_COLUMN_NAMES = [
   'age', 'relationship_status', 'sex', 'sexual_orientation', 'body_type', 'diet', 'drinks', 'drugs', 'education',
-  'ethnicity', 'job', 'location', 'offspring', 'pets', 'religion', 'smokes', 'speaks'
+  'ethnicity', 'height', 'income', 'job', 'last_online', 'location', 'offspring', 'pets', 'religion', 'sign', 'smokes',
+  'speaks', 'essay0', 'essay1', 'essay2', 'essay3', 'essay4', 'essay5', 'essay6', 'essay7', 'essay8', 'essay9'
 ]
 
 # TODO:
