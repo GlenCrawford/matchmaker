@@ -13,13 +13,6 @@ INPUT_DATA_COLUMN_NAMES = [
   'speaks', 'essay0', 'essay1', 'essay2', 'essay3', 'essay4', 'essay5', 'essay6', 'essay7', 'essay8', 'essay9'
 ]
 
-# TODO:
-# job
-# location
-# offspring
-# pets
-# religion
-
 INPUT_DATA_COLUMNS_TO_USE = [
   'age', # Numeric, min: 18, max: 110, mean: 32.3, std: 9.4, no missing values.
   'relationship_status', # String, no missing values, 5 unique values: single (93%), seeing someone (3%), available (3%), married (0.5%), unknown (0.02%). Don't one-hot encode this, pass this through exactly as we're likely going to do a direct value look-up.
@@ -32,17 +25,32 @@ INPUT_DATA_COLUMNS_TO_USE = [
   'education', # String, 6,625 missing values (11%), 32 unique values: high school, college/university, etc. Consolidate similar values to reduce unique values (and replace missing ones). And one-hot encode.
   'ethnicity', # String, 5,676 missing values (9.5%), 217 unique values: white, asian, etc. Consolidate similar values to reduce unique values (and replace missing ones). 81% of all non-missing values are white, asian, hispanic/latin or black. Lump missing and everything else into unknown. Controversial... And one-hot encode.
   'smokes', # String. 5,511 missing values (9.2%), 5 unique values: no, sometimes, etc. Map the values to binary 0 and 1, where any degree of smoking is 1.
-  'speaks' # String, 50 missing values (~0%), 7,643 missing values: english, etc. Consolidate similar values to most common ones to reduce unique values (and replace missing ones), and trim to one each, prioritizing the first mentioned one. And one-hot encode.
+  'speaks', # String, 50 missing values (~0%), 7,643 unique values: english, etc. Consolidate similar values to most common ones to reduce unique values (and replace missing ones), and trim to one each, prioritizing the first mentioned one. And one-hot encode.
+  'offspring', # String, 35,554 missing values (59.3%), 15 unique values: has kids, wants kids, etc. Consolidate similar values to reduce unique values (and replace missing ones). And one-hot encode.
+  'pets', # String, 19,916 missing values (33.2%), 15 unique values: has dogs, likes cats, etc. Consolidate similar values to reduce unique values (and replace missing ones). And one-hot encode.
+  'religion' # String, 20,221 missing values (33.7%), 45 unique values: christianity, judaism, etc. Consolidate similar values to reduce unique values (and replace missing ones). And one-hot encode.
 ]
+
+# In the future, consider replacing the following fields which are currently one-hot encoded into continuous values between 0 and 1.
+# * body_type
+# * diet
+# * drinks
+# * drugs
+# * education
+# * offspring
+
+# Also, in the future, consider splitting pets up into two separate features: cats and dogs.
 
 # Input data columns not using:
 # * essay0, essay1, essay2, essay3, essay4, essay5, essay6, essay7, essay8, essay9: Skip these for now, but intend to use later, by layering some NLP similarity on top of the more basic features.
 # * last_online, sign: Not useful.
 # * income: Would be interesting, but it's apparently an optional field: 81% of all rows have a value of -1. Not enough to be useful.
 # * height: Not really relevant for matchmaking. Is also going to correlate with sex and create noise in that sense. *Could* be untangled, as an academic exercise, but again, it's not relevant enough.
+# * location: The population of this dataset is entirely in and around San Francisco, California, US. There are 199 unique values, such as "san francisco, california". Going to drop this and pretend that it's a local dataset. Not interested in doing anything location matching/radius/etc for the purposes of this project.
+# * job: This is more like industry (e.g. entertainment, banking, etc). There are also a lot of missing, "other", etc values. Not particularly relevant for this purpose; lawyers aren't necessarily looking to date other lawyers. Might do something with this later on though.
 
 NUMERIC_COLUMNS_TO_SCALE = ['age']
-CATEGORICAL_COLUMNS_TO_ONE_HOT_ENCODE = ['body_type', 'diet', 'drinks', 'drugs', 'education', 'ethnicity', 'speaks']
+CATEGORICAL_COLUMNS_TO_ONE_HOT_ENCODE = ['body_type', 'diet', 'drinks', 'drugs', 'education', 'ethnicity', 'speaks', 'offspring', 'pets', 'religion']
 
 def load_input_data():
   return pd.read_csv(
@@ -141,6 +149,84 @@ def preprocess_input_data(data_frame):
         np.nan: 0 # Assume no, as 81% of all non-missing values are no, so it's by far the most likely value. Very imperfect rationale though.
       },
       'speaks': {
+        np.nan: 'unknown'
+      },
+      'offspring': {
+        'wants kids': 'no_kids',
+        'might want kids': 'no_kids',
+        'doesn\'t have kids': 'no_kids',
+        'doesn\'t have kids, but might want them': 'no_kids',
+        'doesn\'t have kids, but wants them': 'no_kids',
+        'doesn\'t want kids': 'no_kids_dont_want_any',
+        'doesn\'t have kids, and doesn\'t want any': 'no_kids_dont_want_any',
+        'has a kid': 'has_kids',
+        'has a kid, but doesn\'t want more': 'has_kids_but_no_more',
+        'has a kid, and might want more': 'has_kids',
+        'has a kid, and wants more': 'has_kids',
+        'has kids': 'has_kids',
+        'has kids, but doesn\'t want more': 'has_kids_but_no_more',
+        'has kids, and might want more': 'has_kids',
+        'has kids, and wants more': 'has_kids',
+        np.nan: 'unknown'
+      },
+      # This is a strange one, it only includes cats and dogs. So if you have a rabbit, you might be NaN, or "likes
+      # dogs". All I can really do is lump anything other than has cats and/or dogs together into unknown.
+      'pets': {
+        'dislikes dogs and dislikes cats': 'unknown',
+        'dislikes cats': 'unknown',
+        'dislikes dogs': 'unknown',
+        'dislikes dogs and likes cats': 'unknown',
+        'likes cats': 'unknown',
+        'likes dogs': 'unknown',
+        'likes dogs and dislikes cats': 'unknown',
+        'likes dogs and likes cats': 'unknown',
+        'has cats': 'has_cats',
+        'dislikes dogs and has cats': 'has_cats',
+        'likes dogs and has cats': 'has_cats',
+        'has dogs': 'has_dogs',
+        'has dogs and dislikes cats': 'has_dogs',
+        'has dogs and likes cats': 'has_dogs',
+        'has dogs and has cats': 'has_cats_and_dogs',
+        np.nan: 'unknown'
+      },
+      # Controversial...
+      'religion': {
+        'atheism but not too serious about it': 'atheism',
+        'atheism and somewhat serious about it': 'atheism',
+        'atheism and very serious about it': 'atheism',
+        'atheism and laughing about it': 'atheism',
+        'agnosticism but not too serious about it': 'agnosticism',
+        'agnosticism and somewhat serious about it': 'agnosticism',
+        'agnosticism and very serious about it': 'agnosticism',
+        'agnosticism and laughing about it': 'agnosticism',
+        'buddhism but not too serious about it': 'buddhism',
+        'buddhism and somewhat serious about it': 'buddhism',
+        'buddhism and very serious about it': 'buddhism',
+        'buddhism and laughing about it': 'buddhism',
+        'hinduism but not too serious about it': 'hinduism',
+        'hinduism and somewhat serious about it': 'hinduism',
+        'hinduism and very serious about it': 'hinduism',
+        'hinduism and laughing about it': 'hinduism',
+        'islam but not too serious about it': 'islam',
+        'islam and somewhat serious about it': 'islam',
+        'islam and very serious about it': 'islam',
+        'islam and laughing about it': 'islam',
+        'judaism but not too serious about it': 'judaism',
+        'judaism and somewhat serious about it': 'judaism',
+        'judaism and very serious about it': 'judaism',
+        'judaism and laughing about it': 'judaism',
+        'christianity but not too serious about it': 'christianity',
+        'christianity and somewhat serious about it': 'christianity',
+        'christianity and very serious about it': 'christianity',
+        'christianity and laughing about it': 'christianity',
+        'catholicism but not too serious about it': 'catholicism',
+        'catholicism and somewhat serious about it': 'catholicism',
+        'catholicism and very serious about it': 'catholicism',
+        'catholicism and laughing about it': 'catholicism',
+        'other but not too serious about it': 'other',
+        'other and somewhat serious about it': 'other',
+        'other and very serious about it': 'other',
+        'other and laughing about it': 'other',
         np.nan: 'unknown'
       }
     }

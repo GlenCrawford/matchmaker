@@ -6,12 +6,6 @@ def main():
   data_frame = DataPreprocessing.load_input_data()
   data_frame = DataPreprocessing.preprocess_input_data(data_frame)
 
-  # For inspecting columns while preprocessing.
-  # print(data_frame['speaks'].describe())
-  # print(data_frame['speaks'].value_counts(dropna = False))
-  # print(data_frame.filter(regex = r'^speaks(.*)$', axis = 1))
-  # exit()
-
   # Quick proof-of-concept testing of scikit-learn KNN.
   # Remove the columns that we later plan on using as exact look-ups.
   data_frame.drop(columns = ['relationship_status', 'sex', 'sexual_orientation'], inplace = True)
