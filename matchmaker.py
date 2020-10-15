@@ -34,6 +34,9 @@ def main():
   all_distances, all_indices = nearest_neighbors_model.kneighbors(random_row)
   nearest_neighbors_distances, nearest_neighbors_indices = nearest_neighbors_model.kneighbors(random_row, n_neighbors = 5)
 
+  data_frame = Utilities.reverse_one_hot_encoding(data_frame)
+  random_row = Utilities.reverse_one_hot_encoding(random_row)
+
   # Calculate a "similarity score" of each neighbor. This is not the absolute similarity of the neighbor from the target
   # one, it's more of its percentile ranking within the distances of all rows, meaning that it's effectively its ranking
   # within the population, converted to a percentage/score.
