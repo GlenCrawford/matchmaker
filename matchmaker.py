@@ -16,7 +16,8 @@ def main():
   data_frame.drop(index_of_random_row, inplace = True)
 
   # Get X most similar rows (nearest neighbors).
-  # By default, return the distances of all rows. This will be quite inefficient, so override this when looking for a smaller subset by specifying a smaller number when invoking #kneighbors.
+  # By default, return the distances of all rows. This will be quite inefficient, so override this when looking for a
+  # smaller subset by specifying a smaller number when invoking .kneighbors.
   # A formula of "minkowski" and p of 2 makes for a Euclidean distance metric.
   # https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.NearestNeighbors.html
   nearest_neighbors_model = NearestNeighbors(
@@ -26,7 +27,10 @@ def main():
     p = 2
   ).fit(data_frame)
   all_distances, all_indices = nearest_neighbors_model.kneighbors(random_row)
-  nearest_neighbors_distances, nearest_neighbors_indices = nearest_neighbors_model.kneighbors(random_row, n_neighbors = 5)
+  nearest_neighbors_distances, nearest_neighbors_indices = nearest_neighbors_model.kneighbors(
+    random_row,
+    n_neighbors = 5
+  )
 
   data_frame = Utilities.reverse_one_hot_encoding(data_frame)
   random_row = Utilities.reverse_one_hot_encoding(random_row)
@@ -36,7 +40,7 @@ def main():
   # within the population, converted to a percentage/score.
   nearest_neighbors_similarity_score = [100 - stats.percentileofscore(all_distances[0], distance, 'rank') for distance in nearest_neighbors_distances[0]]
 
-  # Map the neighbors' result set indices to actual rows.
+  # Fetch the neighbors' from the data set.
   nearest_neighbors = data_frame.iloc[nearest_neighbors_indices[0]]
 
   print('Random row:\n', random_row, '\n\n')
