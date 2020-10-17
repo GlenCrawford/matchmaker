@@ -23,6 +23,7 @@ def main():
     p = 2
   ).fit(population_data_frame.loc[:, ~population_data_frame.columns.isin(DataPreprocessing.DIRECT_LOOKUP_FEATURES)])
 
+  # Can these both be done at once?
   all_distances, all_indices = nearest_neighbors_model.kneighbors(
     input_data_frame.loc[:, ~input_data_frame.columns.isin(DataPreprocessing.DIRECT_LOOKUP_FEATURES)]
   )

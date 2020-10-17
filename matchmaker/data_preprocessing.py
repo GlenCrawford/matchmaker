@@ -1,6 +1,7 @@
+from . import utilities as Utilities
+
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import sklearn
 from sklearn import preprocessing
 
@@ -97,23 +98,6 @@ INPUT_DATA_COLUMNS_TO_USE = [
   # One-hot encode.
   'ethnicity',
 
-  # smokes:
-  # String
-  # 5,511 missing values (9.2%)
-  # 5 unique values: no, sometimes, etc.
-  # Map the values to binary 0 and 1, where any degree of smoking is 1.
-  'smokes',
-
-  # speaks:
-  # String
-  # 50 missing values (~0%)
-  # 7,643 unique values: english, etc.
-  # Consolidate similar values to the 9 most common ones to reduce unique values, and trim to one language each,
-  # prioritizing the first mentioned one, on the (I believe correct) assumption that it's their strongest one.
-  # Replace missing values with unknown.
-  # One-hot encode.
-  'speaks',
-
   # offspring:
   # String
   # 35,554 missing values (59.3%)
@@ -144,7 +128,24 @@ INPUT_DATA_COLUMNS_TO_USE = [
   # judaism, christianity, catholicism, other.
   # Replace missing values with unknown.
   # One-hot encode.
-  'religion'
+  'religion',
+
+  # smokes:
+  # String
+  # 5,511 missing values (9.2%)
+  # 5 unique values: no, sometimes, etc.
+  # Map the values to binary 0 and 1, where any degree of smoking is 1.
+  'smokes',
+
+  # speaks:
+  # String
+  # 50 missing values (~0%)
+  # 7,643 unique values: english, etc.
+  # Consolidate similar values to the 9 most common ones to reduce unique values, and trim to one language each,
+  # prioritizing the first mentioned one, on the (I believe correct) assumption that it's their strongest one.
+  # Replace missing values with unknown.
+  # One-hot encode.
+  'speaks'
 ]
 
 # Future feature engineering work:
@@ -179,7 +180,7 @@ INPUT_DATA_COLUMNS_TO_USE = [
 
 DIRECT_LOOKUP_FEATURES = ['sex', 'sexual_orientation']
 
-CONTINUOUS_COLUMNS_AGE_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 10)) # 1
+CONTINUOUS_COLUMNS_AGE_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 1))
 
 CATEGORICAL_COLUMNS_TO_ONE_HOT_ENCODE = [
   'body_type',
@@ -188,10 +189,29 @@ CATEGORICAL_COLUMNS_TO_ONE_HOT_ENCODE = [
   'drugs',
   'education',
   'ethnicity',
-  'speaks',
   'offspring',
   'pets',
-  'religion'
+  'religion',
+  'speaks'
+]
+
+# Preserve the order of the features from the input data, after both applying and reversing one-hot encoding.
+# Note that the one-hot encoded features need to match the column name(s) both with and without the encoding.
+FEATURE_SORT_ORDER = [
+  r'^age$',
+  r'^sex$',
+  r'^sexual_orientation$',
+  r'^body_type(?:_.*)?$',
+  r'^diet(?:_.*)?$',
+  r'^drinks(?:_.*)?$',
+  r'^drugs(?:_.*)?$',
+  r'^education(?:_.*)?$',
+  r'^ethnicity(?:_.*)?$',
+  r'^offspring(?:_.*)?$',
+  r'^pets(?:_.*)?$',
+  r'^religion(?:_.*)?$',
+  r'^smokes$',
+  r'^speaks(?:_.*)?$'
 ]
 
 def load_input_data():
@@ -409,5 +429,7 @@ def preprocess_input_data(data_frame):
 
   # Linearly scale/normalize continuous features.
   data_frame[['age']] = CONTINUOUS_COLUMNS_AGE_SCALER.fit_transform(data_frame[['age']].to_numpy())
+
+  data_frame = Utilities.sort_data_frame(data_frame)
 
   return data_frame
