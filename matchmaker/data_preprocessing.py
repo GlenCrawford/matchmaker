@@ -162,8 +162,7 @@ INPUT_DATA_COLUMNS_TO_USE = [
 #
 # Also consider splitting pets up into two separate features: cats and dogs.
 #
-# age and smokes are retained as continuous and scaled between 0 and 1. Investigate whether these are appropriate scales
-# regarding distance weighting.
+# smokes is an integer between 0 and 1. Investigate whether this is an appropriate scale regarding distance weighting.
 
 # Input data columns not using:
 # * essay0, essay1, essay2, essay3, essay4, essay5, essay6, essay7, essay8, essay9: Skip these for now, but intend to
@@ -182,7 +181,11 @@ INPUT_DATA_COLUMNS_TO_USE = [
 
 DIRECT_LOOKUP_FEATURES = ['sex', 'sexual_orientation']
 
-CONTINUOUS_COLUMNS_AGE_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 1))
+# The wider the range, the more stretched out the scale, the greater the distance of variations, the less near/similar
+# variations are, the less likely they are to be a near neighbor. Therefore, use a wider range for continuous features
+# that should match more exactly, and use a smaller range for those that should allow more variation. Sounds counter-
+# intuitive, but reasons out.
+CONTINUOUS_COLUMNS_AGE_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 0.7))
 
 CATEGORICAL_COLUMNS_TO_ONE_HOT_ENCODE = [
   'body_type',
