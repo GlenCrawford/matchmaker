@@ -11,10 +11,6 @@ def main():
   input_data_frame = population_data_frame.loc[['input']]
   population_data_frame.drop('input', inplace = True)
 
-  # Remove the columns that we later plan on using as exact look-ups.
-  population_data_frame.drop(columns = ['relationship_status', 'sex', 'sexual_orientation'], inplace = True)
-  input_data_frame.drop(columns = ['relationship_status', 'sex', 'sexual_orientation'], inplace = True)
-
   # Get X most similar rows (nearest neighbors).
   # By default, return the distances of all rows. This will be quite inefficient, so override this when looking for a
   # smaller subset by specifying a smaller number when invoking .kneighbors.
@@ -25,10 +21,14 @@ def main():
     algorithm = 'auto',
     metric = 'minkowski',
     p = 2
-  ).fit(population_data_frame)
-  all_distances, all_indices = nearest_neighbors_model.kneighbors(input_data_frame)
+  ).fit(population_data_frame.loc[:, ~population_data_frame.columns.isin(DataPreprocessing.DIRECT_LOOKUP_FEATURES)])
+
+  all_distances, all_indices = nearest_neighbors_model.kneighbors(
+    input_data_frame.loc[:, ~input_data_frame.columns.isin(DataPreprocessing.DIRECT_LOOKUP_FEATURES)]
+  )
+
   nearest_neighbors_distances, nearest_neighbors_indices = nearest_neighbors_model.kneighbors(
-    input_data_frame,
+    input_data_frame.loc[:, ~input_data_frame.columns.isin(DataPreprocessing.DIRECT_LOOKUP_FEATURES)],
     n_neighbors = 5
   )
 

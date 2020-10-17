@@ -26,7 +26,7 @@ INPUT_DATA_COLUMNS_TO_USE = [
   # 5 unique values: single (93%), seeing someone (3%), available (3%), married (0.5%), unknown (0.02%)
   # Drop rows that are unknown, and it's kind of critical given the problem domain.
   # Drop rows that are seeing someone or married, because...why are they online dating?
-  # Don't encode, pass this through exactly as we're likely going to do a direct value look-up.
+  # Remove this column after dropping the rows, won't need it after that.
   'relationship_status',
 
   # sex:
@@ -177,6 +177,8 @@ INPUT_DATA_COLUMNS_TO_USE = [
 #   values. Not particularly relevant for this purpose; lawyers aren't necessarily looking to date other lawyers. Might
 #   do something with this later on though.
 
+DIRECT_LOOKUP_FEATURES = ['sex', 'sexual_orientation']
+
 CONTINUOUS_COLUMNS_AGE_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 10)) # 1
 
 CATEGORICAL_COLUMNS_TO_ONE_HOT_ENCODE = [
@@ -203,8 +205,10 @@ def load_input_data():
 def preprocess_input_data(data_frame):
   # Drop rows where relationship_status is unknown.
   # Also drop rows that are seeing someone or married. Get off OkCupid.
+  # Then drop the column, as it is no longer needed outside preprocessing.
   relationship_statuses_to_drop = ['unknown', 'seeing someone', 'married']
   data_frame = data_frame.drop(data_frame[data_frame['relationship_status'].isin(relationship_statuses_to_drop)].index)
+  data_frame.drop('relationship_status', axis = 1, inplace = True)
 
   # Per-feature value consolidation.
   data_frame = data_frame.replace(
