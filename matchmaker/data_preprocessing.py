@@ -177,7 +177,8 @@ INPUT_DATA_COLUMNS_TO_USE = [
 #   values. Not particularly relevant for this purpose; lawyers aren't necessarily looking to date other lawyers. Might
 #   do something with this later on though.
 
-CONTINUOUS_COLUMNS_TO_SCALE = ['age']
+CONTINUOUS_COLUMNS_AGE_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 10)) # 1
+
 CATEGORICAL_COLUMNS_TO_ONE_HOT_ENCODE = [
   'body_type',
   'diet',
@@ -403,9 +404,6 @@ def preprocess_input_data(data_frame):
   )
 
   # Linearly scale/normalize continuous features.
-  continuous_scaler = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 1))
-  data_frame[CONTINUOUS_COLUMNS_TO_SCALE] = continuous_scaler.fit_transform(
-    data_frame[CONTINUOUS_COLUMNS_TO_SCALE].to_numpy()
-  )
+  data_frame[['age']] = CONTINUOUS_COLUMNS_AGE_SCALER.fit_transform(data_frame[['age']].to_numpy())
 
   return data_frame

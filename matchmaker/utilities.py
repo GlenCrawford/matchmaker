@@ -18,3 +18,10 @@ def reverse_one_hot_encoding(data_frame):
     data_frame.drop(columns = columns_for_feature, inplace = True)
 
   return data_frame
+
+# Use the scalers (which have their range and fitting stored within them) to reverse the scaling performed during the
+# preprocessing step.
+def reverse_continuous_scaling(data_frame):
+  data_frame[['age']] = DataPreprocessing.CONTINUOUS_COLUMNS_AGE_SCALER.inverse_transform(data_frame[['age']].to_numpy())
+
+  return data_frame

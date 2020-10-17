@@ -35,6 +35,9 @@ def main():
   population_data_frame = Utilities.reverse_one_hot_encoding(population_data_frame)
   input_data_frame = Utilities.reverse_one_hot_encoding(input_data_frame)
 
+  population_data_frame = Utilities.reverse_continuous_scaling(population_data_frame)
+  input_data_frame = Utilities.reverse_continuous_scaling(input_data_frame)
+
   # Calculate a "similarity score" of each neighbor. This is not the absolute similarity of the neighbor from the target
   # one, it's more of its percentile ranking within the distances of all rows, meaning that it's effectively its ranking
   # within the population, converted to a percentage/score.
