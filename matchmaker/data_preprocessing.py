@@ -5,6 +5,8 @@ import pandas as pd
 import sklearn
 from sklearn import preprocessing
 
+pd.set_option('display.min_rows', 25)
+
 # Relative from the project root directory.
 INPUT_DATA_PATH = 'data/okcupid_profiles.csv'
 
@@ -34,14 +36,14 @@ INPUT_DATA_COLUMNS_TO_USE = [
   # String
   # No missing values
   # 2 unique values: m (59.8%), f (40.2%)
-  # Don't encode, pass this through exactly as we're likely going to do a direct value look-up.
+  # Don't encode, pass this through exactly as we are going to use this for a direct value look-up.
   'sex',
 
   # sexual_orientation:
   # String
   # No missing values
   # 3 unique values: straight (86%), gay (9.3%), bisexual (4.6%)
-  # Don't encode, pass this through exactly as we're likely going to do a direct value look-up.
+  # Don't encode, pass this through exactly as we are going to use this for a direct value look-up.
   'sexual_orientation',
 
   # body_type:

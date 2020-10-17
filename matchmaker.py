@@ -11,6 +11,8 @@ def main():
   input_data_frame = population_data_frame.loc[['input']]
   population_data_frame.drop('input', inplace = True)
 
+  population_data_frame = apply_direct_lookups(input_data_frame, population_data_frame)
+
   # Get X most similar rows (nearest neighbors).
   # By default, return the distances of all rows. This will be quite inefficient, so override this when looking for a
   # smaller subset by specifying a smaller number when invoking .kneighbors.
@@ -30,7 +32,7 @@ def main():
 
   nearest_neighbors_distances, nearest_neighbors_indices = nearest_neighbors_model.kneighbors(
     input_data_frame.loc[:, ~input_data_frame.columns.isin(DataPreprocessing.DIRECT_LOOKUP_FEATURES)],
-    n_neighbors = 5
+    n_neighbors = 20
   )
 
   population_data_frame = Utilities.reverse_one_hot_encoding(population_data_frame)
@@ -71,11 +73,58 @@ def add_input_data_to_population(population_data_frame):
     'graduated from college/university', # education
     'white', # ethnicity
     'doesn\'t have kids, but wants them', # offspring
-    'likes dogs and dislikes cats', # pets
+    'likes dogs and dislikes cats', # pets 🚫🐈
     'christianity', # religion
     'no', # smokes
     'english' # speaks
   ]
+
+  return population_data_frame
+
+# Apply pure logic-based filters to the population for features that must be exact, not merely similar.
+def apply_direct_lookups(input_data_frame, population_data_frame):
+  input_sex = input_data_frame.iloc[0]['sex']
+  input_sexual_orientation = input_data_frame.iloc[0]['sexual_orientation']
+
+  # If input is straight:
+  # * Filter sex to other sex.
+  # * Filter sexual_orientation to straight and bisexual.
+  if input_sexual_orientation == 'straight':
+    population_data_frame = population_data_frame[
+      population_data_frame['sex'].isin([{ 'm': 'f', 'f': 'm' }[input_sex]]) &
+      population_data_frame['sexual_orientation'].isin(['straight', 'bisexual'])
+    ]
+  # If input is gay:
+  # * Filter sex to input sex.
+  # * Filter sexual_orientation to gay and bisexual.
+  elif input_sexual_orientation == 'gay':
+    population_data_frame = population_data_frame[
+      (population_data_frame['sex'] == input_sex)
+      &
+      population_data_frame['sexual_orientation'].isin(['gay', 'bisexual'])
+    ]
+  # If input is bisexual:
+  # * If input is male, filter:
+  #   - (sex is male) and (sexual_orientation is gay or bisexual)
+  #   - or
+  #   - (sex is female) and (sexual_orientation is straight or bisexual)
+  # * If input is female, filter:
+  #   - (sex is male) and (sexual_orientation is straight or bisexual)
+  #   - or
+  #   - (sex is female) and (sexual_orientation is gay or bisexual)
+  elif input_sexual_orientation == 'bisexual':
+    if input_sex == 'm':
+      population_data_frame = population_data_frame[
+        ((population_data_frame['sex'] == 'm') & population_data_frame['sexual_orientation'].isin(['gay', 'bisexual']))
+        |
+        ((population_data_frame['sex'] == 'f') & population_data_frame['sexual_orientation'].isin(['straight', 'bisexual']))
+      ]
+    elif input_sex == 'f':
+      population_data_frame = population_data_frame[
+        ((population_data_frame['sex'] == 'm') & population_data_frame['sexual_orientation'].isin(['straight', 'bisexual']))
+        |
+        ((population_data_frame['sex'] == 'f') & population_data_frame['sexual_orientation'].isin(['gay', 'bisexual']))
+      ]
 
   return population_data_frame
 
