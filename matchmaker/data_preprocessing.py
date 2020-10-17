@@ -29,7 +29,7 @@ INPUT_DATA_COLUMNS_TO_USE = [
   # 5 unique values: single (93%), seeing someone (3%), available (3%), married (0.5%), unknown (0.02%)
   # Drop rows that are unknown, and it's kind of critical given the problem domain.
   # Drop rows that are seeing someone or married, because...why are they online dating?
-  # Remove this column after dropping the rows, won't need it after that.
+  # Remove this feature after dropping the rows, won't need it after that.
   'relationship_status',
 
   # sex:
@@ -136,7 +136,11 @@ INPUT_DATA_COLUMNS_TO_USE = [
   # String
   # 5,511 missing values (9.2%)
   # 5 unique values: no, sometimes, etc.
-  # Map the values to binary 0 and 1, where any degree of smoking is 1.
+  # Map the values to integers between 0 and 5, scaled based on the frequency of smoking.
+  # Treat missing values as non-smokers. 81% of all non-missing values are no so it's by far the most likely value.
+  # Understood that this is a very imperfect rationale.
+  # Stretch the scale out quite large to place a higher value on similairy, as non-smokers likely value high similarity
+  # on this dimension.
   'smokes',
 
   # speaks:
@@ -161,8 +165,6 @@ INPUT_DATA_COLUMNS_TO_USE = [
 # * offspring
 #
 # Also consider splitting pets up into two separate features: cats and dogs.
-#
-# smokes is an integer between 0 and 1. Investigate whether this is an appropriate scale regarding distance weighting.
 
 # Input data columns not using:
 # * essay0, essay1, essay2, essay3, essay4, essay5, essay6, essay7, essay8, essay9: Skip these for now, but intend to
@@ -183,11 +185,12 @@ DIRECT_LOOKUP_FEATURES = ['sex', 'sexual_orientation']
 
 # The wider the range, the more stretched out the scale, the greater the distance of variations, the less near/similar
 # variations are, the less likely they are to be a near neighbor. Therefore, use a wider range for continuous features
-# that should match more exactly, and use a smaller range for those that should allow more variation. Sounds counter-
-# intuitive, but reasons out.
-CONTINUOUS_COLUMNS_AGE_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 0.7))
+# that should match more exactly, as differences will have a larger influence on similarity. And use a smaller range for
+# those that should allow more variation and have a smaller influence on similarity. Sounds counter-intuitive, but
+# reasons out.
+CONTINUOUS_FEATURE_AGE_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 0.7))
 
-CATEGORICAL_COLUMNS_TO_ONE_HOT_ENCODE = [
+CATEGORICAL_FEATURES_TO_ONE_HOT_ENCODE = [
   'body_type',
   'diet',
   'drinks',
@@ -313,11 +316,11 @@ def preprocess_input_data(data_frame):
       },
       'smokes': {
         'no': 0,
-        'sometimes': 1,
-        'when drinking': 1,
-        'yes': 1,
-        'trying to quit': 1,
-        np.nan: 0 # 81% of all non-missing values are no so it's by far the most likely value. Very imperfect rationale.
+        'sometimes': 3,
+        'when drinking': 3,
+        'trying to quit': 4,
+        'yes': 5,
+        np.nan: 0
       },
       'speaks': {
         np.nan: 'unknown'
@@ -428,12 +431,12 @@ def preprocess_input_data(data_frame):
   # Apply one-hot encoding to categorical features.
   data_frame = pd.get_dummies(
     data_frame,
-    columns = CATEGORICAL_COLUMNS_TO_ONE_HOT_ENCODE,
+    columns = CATEGORICAL_FEATURES_TO_ONE_HOT_ENCODE,
     sparse = False
   )
 
   # Linearly scale/normalize continuous features.
-  data_frame[['age']] = CONTINUOUS_COLUMNS_AGE_SCALER.fit_transform(data_frame[['age']].to_numpy())
+  data_frame[['age']] = CONTINUOUS_FEATURE_AGE_SCALER.fit_transform(data_frame[['age']].to_numpy())
 
   data_frame = Utilities.sort_data_frame(data_frame)
 

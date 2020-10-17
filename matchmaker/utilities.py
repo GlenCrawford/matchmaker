@@ -6,7 +6,7 @@ import pandas as pd
 # back to a single column. E.g. columns body_type_thin and body_type_fit get merged into one column called body_type
 # with values thin and fit.
 def reverse_one_hot_encoding(data_frame):
-  for one_hot_encoded_feature in DataPreprocessing.CATEGORICAL_COLUMNS_TO_ONE_HOT_ENCODE:
+  for one_hot_encoded_feature in DataPreprocessing.CATEGORICAL_FEATURES_TO_ONE_HOT_ENCODE:
     # Get all the columns dervied from this feature.
     columns_for_feature = [column for column in data_frame.columns if column.startswith(one_hot_encoded_feature)]
 
@@ -26,7 +26,7 @@ def reverse_one_hot_encoding(data_frame):
 # Use the scalers (which have their range and fitting stored within them) to reverse the scaling performed during the
 # preprocessing step.
 def reverse_continuous_scaling(data_frame):
-  data_frame[['age']] = DataPreprocessing.CONTINUOUS_COLUMNS_AGE_SCALER.inverse_transform(data_frame[['age']].to_numpy())
+  data_frame[['age']] = DataPreprocessing.CONTINUOUS_FEATURE_AGE_SCALER.inverse_transform(data_frame[['age']].to_numpy())
 
   return data_frame
 
