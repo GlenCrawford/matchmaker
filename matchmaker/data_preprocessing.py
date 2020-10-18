@@ -157,12 +157,12 @@ INPUT_DATA_COLUMNS_TO_USE = [
 # Future feature engineering work:
 #
 # Consider replacing the following fields which are currently one-hot encoded into continuous values between 0 and 1.
-# * body_type
-# * diet
-# * drinks
-# * drugs
-# * education
-# * offspring
+# * body_type (yes)
+# * diet (maybe)
+# * drinks (yes)
+# * drugs (yes)
+# * education (yes)
+# * offspring (maybe split into two)
 #
 # Also consider splitting pets up into two separate features: cats and dogs.
 

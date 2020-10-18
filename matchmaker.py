@@ -2,7 +2,7 @@ from matchmaker import *
 from sklearn.neighbors import NearestNeighbors
 from scipy import stats
 
-NEAREST_NEIGHBORS_TO_RETRIEVE = 40
+NEAREST_NEIGHBORS_TO_RETRIEVE = 40 # Just because that's what fits on my screen ;)
 
 def main():
   population_data_frame = DataPreprocessing.load_input_data()
@@ -47,7 +47,7 @@ def main():
   # one, it's more of its percentile ranking within the distances of all rows, meaning that it's effectively its ranking
   # within the population, converted to a percentage/score.
   nearest_neighbors_similarity_score = [
-    100 - stats.percentileofscore(all_distances[0], distance, 'rank')
+    round((100 - stats.percentileofscore(all_distances[0], distance, 'rank')), 2)
     for distance in nearest_neighbors_distances[0]
   ]
 
