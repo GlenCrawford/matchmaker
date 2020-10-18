@@ -33,7 +33,7 @@ def reverse_continuous_scaling(data_frame):
 # Use the categorical features ordinal encoders (which still has its categories stored from preprocessing) to reverse
 # the encodings back to the original category labels.
 def reverse_ordinal_encoding(data_frame):
-  data_frame[['smokes']] = DataPreprocessing.CATEGORICAL_FEATURES_ORDINAL_ENCODER.inverse_transform(data_frame[['smokes']].to_numpy())
+  data_frame[DataPreprocessing.CATEGORICAL_FEATURES_TO_ORDINAL_ENCODE] = DataPreprocessing.CATEGORICAL_FEATURES_ORDINAL_ENCODER.inverse_transform(data_frame[DataPreprocessing.CATEGORICAL_FEATURES_TO_ORDINAL_ENCODE].to_numpy())
 
   return data_frame
 

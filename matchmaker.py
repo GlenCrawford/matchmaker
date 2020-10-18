@@ -13,12 +13,9 @@ def main():
   input_data_frame = population_data_frame.loc[['input']]
   population_data_frame.drop('input', inplace = True)
 
-  # print('Input data frame:', input_data_frame, '\n\n')
-  # print('Population data frame:', population_data_frame[['smokes']], '\n\n')
-  #
-  # print(population_data_frame['smokes'].describe())
-  # print(population_data_frame['smokes'].value_counts(dropna = False))
-  # print(population_data_frame.filter(regex = r'^smokes(.*)$', axis = 1))
+  # print(population_data_frame['education'].describe())
+  # print(population_data_frame['education'].value_counts(dropna = False))
+  # print(population_data_frame.filter(regex = r'^drinks(.*)$', axis = 1))
   #
   # exit()
 
@@ -91,6 +88,9 @@ def add_input_data_to_population(population_data_frame):
     'no', # smokes
     'english' # speaks
   ]
+
+  # Override single value for testing/debugging:
+  # population_data_frame.at['input', 'education'] = 'less_than_high_school'
 
   return population_data_frame
 

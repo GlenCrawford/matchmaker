@@ -50,9 +50,9 @@ INPUT_DATA_COLUMNS_TO_USE = [
   # String
   # 5,293 missing values (8.8%)
   # 12 unique values: average, athletic, etc.
-  # Consolidate similar values to reduce unique values to fit, average, curvy, thin, overweight, and unknown.
-  # Replace missing values with unknown.
-  # One-hot encode.
+  # Consolidate similar values to reduce unique values to thin, fit, average, curvy and overweight.
+  # Replace missing and "rather not say" values with average.
+  # Encode the final set of unique values to ordered and scaled ordinals.
   'body_type',
 
   # diet:
@@ -69,8 +69,8 @@ INPUT_DATA_COLUMNS_TO_USE = [
   # 2,985 missing values (5%)
   # 6 unique values: often, rarely, etc.
   # Consolidate similar values to reduce unique values (e.g. very often to often).
-  # Replace missing values with unknown.
-  # One-hot encode.
+  # Replace missing values with socially as that is by far the most common value at 70%.
+  # Encode the final set of unique values to ordered and scaled ordinals.
   'drinks',
 
   # drugs:
@@ -78,7 +78,7 @@ INPUT_DATA_COLUMNS_TO_USE = [
   # 14,076 missing values (23%)
   # 3 unique values: never, sometimes, often.
   # Replace missing values with never, which is not a great assumption, but whatever.
-  # One-hot encode.
+  # Encode the final set of unique values to ordered and scaled ordinals.
   'drugs',
 
   # education:
@@ -86,8 +86,9 @@ INPUT_DATA_COLUMNS_TO_USE = [
   # 6,625 missing values (11%)
   # 32 unique values: high school, college/university, etc.
   # Consolidate similar values to reduce unique values.
-  # Replace missing values with unknown.
-  # One-hot encode.
+  # Replace missing and joke (space camp) values with high school. Assume that if someone has a degree they would have
+  # said so.
+  # Encode the final set of unique values to ordered and scaled ordinals.
   'education',
 
   # ethnicity:
@@ -141,7 +142,7 @@ INPUT_DATA_COLUMNS_TO_USE = [
   # Understood that this is a very imperfect rationale.
   # Encode the final set of unique values (no, sometimes and yes) to integers between 0 and 5, ordered and scaled based
   # on the frequency of smoking.
-  # Stretch the scale out quite large to place a higher value on similairy, as non-smokers likely value high similarity
+  # Stretch the scale out quite large to place a higher value on similarity, as non-smokers likely value high similarity
   # on this dimension.
   'smokes',
 
@@ -159,14 +160,15 @@ INPUT_DATA_COLUMNS_TO_USE = [
 # Future feature engineering work:
 #
 # Consider replacing the following fields which are currently one-hot encoded into continuous values between 0 and 1.
-# * body_type (yes)
 # * diet (maybe)
-# * drinks (yes)
-# * drugs (yes)
-# * education (yes)
 # * offspring (maybe split into two)
 #
 # Also consider splitting pets up into two separate features: cats and dogs.
+#
+# Features that will likely still be one-hot encoded and need to think about:
+# * ethnicity
+# * religion
+# * speaks (should this be direct lookup?)
 
 # Input data columns not using:
 # * essay0, essay1, essay2, essay3, essay4, essay5, essay6, essay7, essay8, essay9: Skip these for now, but intend to
@@ -193,11 +195,7 @@ DIRECT_LOOKUP_FEATURES = ['sex', 'sexual_orientation']
 CONTINUOUS_FEATURE_AGE_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 0.7))
 
 CATEGORICAL_FEATURES_TO_ONE_HOT_ENCODE = [
-  'body_type',
   'diet',
-  'drinks',
-  'drugs',
-  'education',
   'ethnicity',
   'offspring',
   'pets',
@@ -210,9 +208,20 @@ CATEGORICAL_FEATURES_TO_ONE_HOT_ENCODE = [
 # smoking, than between sometimes smoking and regularly smoking. Therefore introduce buffer values in the categories to
 # pad out the resulting scale. For smoking, this menas that the values for no, sometimes and yes will be 0, 3 and 5
 # instead of 0, 1 and 2. Is there a more standard way of doing this? Maybe, but not that I could find.
+CATEGORICAL_FEATURES_TO_ORDINAL_ENCODE = ['body_type', 'drinks', 'drugs', 'education', 'smokes']
+CATEGORICAL_FEATURE_BODY_TYPE_ORDINALITIES = ['thin', 'fit', 'average', 'curvy', 'buffer1', 'overweight']
+CATEGORICAL_FEATURE_DRINKS_ORDINALITIES = ['never', 'rarely', 'socially', 'buffer1', 'often']
+CATEGORICAL_FEATURE_DRUGS_ORDINALITIES = ['never', 'buffer1', 'sometimes', 'buffer2', 'often']
+CATEGORICAL_FEATURE_EDUCATION_ORDINALITIES = ['less_than_high_school', 'high_school', 'in_progress_study', 'completed_undergraduate_study', 'completed_postgraduate_study']
 CATEGORICAL_FEATURE_SMOKES_ORDINALITIES = ['no', 'buffer1', 'buffer2', 'sometimes', 'buffer4', 'yes']
 CATEGORICAL_FEATURES_ORDINAL_ENCODER = sklearn.preprocessing.OrdinalEncoder(
-  categories = [CATEGORICAL_FEATURE_SMOKES_ORDINALITIES],
+  categories = [
+    CATEGORICAL_FEATURE_BODY_TYPE_ORDINALITIES,
+    CATEGORICAL_FEATURE_DRINKS_ORDINALITIES,
+    CATEGORICAL_FEATURE_DRUGS_ORDINALITIES,
+    CATEGORICAL_FEATURE_EDUCATION_ORDINALITIES,
+    CATEGORICAL_FEATURE_SMOKES_ORDINALITIES
+  ],
   dtype = int
 )
 
@@ -222,11 +231,11 @@ FEATURE_SORT_ORDER = [
   r'^age$',
   r'^sex$',
   r'^sexual_orientation$',
-  r'^body_type(?:_.*)?$',
+  r'^body_type$',
   r'^diet(?:_.*)?$',
-  r'^drinks(?:_.*)?$',
-  r'^drugs(?:_.*)?$',
-  r'^education(?:_.*)?$',
+  r'^drinks$',
+  r'^drugs$',
+  r'^education$',
   r'^ethnicity(?:_.*)?$',
   r'^offspring(?:_.*)?$',
   r'^pets(?:_.*)?$',
@@ -258,7 +267,9 @@ def preprocess_input_data(data_frame):
   data_frame[['age']] = CONTINUOUS_FEATURE_AGE_SCALER.fit_transform(data_frame[['age']].to_numpy())
 
   # Apply ordinal/positional encodings to categorical features.
-  data_frame[['smokes']] = CATEGORICAL_FEATURES_ORDINAL_ENCODER.fit_transform(data_frame[['smokes']].to_numpy())
+  data_frame[CATEGORICAL_FEATURES_TO_ORDINAL_ENCODE] = CATEGORICAL_FEATURES_ORDINAL_ENCODER.fit_transform(
+    data_frame[CATEGORICAL_FEATURES_TO_ORDINAL_ENCODE].to_numpy()
+  )
 
   data_frame = Utilities.sort_data_frame(data_frame)
 
@@ -289,9 +300,9 @@ def consolidate_values(data_frame):
         'jacked': 'fit',
         'full figured': 'curvy',
         'a little extra': 'curvy',
-        'rather not say': 'unknown',
-        'used up': 'unknown', # I don't even know what this means...
-        np.nan: 'unknown'
+        'rather not say': 'average',
+        'used up': 'average', # I don't even know what this means...
+        np.nan: 'average'
       },
       'diet': {
         'mostly anything': 'anything',
@@ -312,7 +323,7 @@ def consolidate_values(data_frame):
         'very often': 'often',
         'not at all': 'never',
         'desperately': 'often', # I presume this means often.
-        np.nan: 'unknown'
+        np.nan: 'socially'
       },
       'drugs': {
         np.nan: 'never'
@@ -346,11 +357,11 @@ def consolidate_values(data_frame):
         'graduated from masters program': 'completed_postgraduate_study',
         'graduated from ph.d program': 'completed_postgraduate_study',
         'graduated from med school': 'completed_postgraduate_study',
-        'dropped out of space camp': 'unknown',
-        'working on space camp': 'unknown',
-        'space camp': 'unknown',
-        'graduated from space camp': 'unknown',
-        np.nan: 'unknown'
+        'dropped out of space camp': 'high_school',
+        'working on space camp': 'high_school',
+        'space camp': 'high_school',
+        'graduated from space camp': 'high_school',
+        np.nan: 'high_school'
       },
       'ethnicity': {
         'hispanic / latin': 'hispanic_latin',
