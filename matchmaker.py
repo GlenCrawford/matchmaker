@@ -13,13 +13,17 @@ def main():
   input_data_frame = population_data_frame.loc[['input']]
   population_data_frame.drop('input', inplace = True)
 
-  # print(population_data_frame['education'].describe())
-  # print(population_data_frame['education'].value_counts(dropna = False))
+  # print(population_data_frame['speaks'].value_counts(dropna = False))
   # print(population_data_frame.filter(regex = r'^drinks(.*)$', axis = 1))
   #
   # exit()
 
   population_data_frame = apply_direct_lookups(input_data_frame, population_data_frame)
+
+  # If there is no population to search for similarity within after applying the direct lookups, stop here.
+  if len(population_data_frame) == 0:
+    print('No results :(')
+    exit()
 
   # Get X most similar rows (nearest neighbors).
   # By default, return the distances of all rows. This will be quite inefficient, so override this when looking for a
@@ -90,7 +94,7 @@ def add_input_data_to_population(population_data_frame):
   ]
 
   # Override single value for testing/debugging:
-  # population_data_frame.at['input', 'education'] = 'less_than_high_school'
+  # population_data_frame.at['input', 'speaks'] = 'french'
 
   return population_data_frame
 
@@ -98,6 +102,7 @@ def add_input_data_to_population(population_data_frame):
 def apply_direct_lookups(input_data_frame, population_data_frame):
   input_sex = input_data_frame.iloc[0]['sex']
   input_sexual_orientation = input_data_frame.iloc[0]['sexual_orientation']
+  input_speaks = input_data_frame.iloc[0]['speaks']
 
   # If input is straight:
   # * Filter sex to other sex.
@@ -138,6 +143,9 @@ def apply_direct_lookups(input_data_frame, population_data_frame):
         |
         ((population_data_frame['sex'] == 'f') & population_data_frame['sexual_orientation'].isin(['gay', 'bisexual']))
       ]
+
+  # Filter by the input language.
+  population_data_frame = population_data_frame[population_data_frame['speaks'] == input_speaks]
 
   return population_data_frame
 

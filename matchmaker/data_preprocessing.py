@@ -152,8 +152,10 @@ INPUT_DATA_COLUMNS_TO_USE = [
   # 7,643 unique values: english, etc.
   # Consolidate similar values to the 9 most common ones to reduce unique values, and trim to one language each,
   # prioritizing the first mentioned one, on the (I believe correct) assumption that it's their strongest one.
-  # Replace missing values with unknown.
-  # One-hot encode.
+  # Later on if might be nice to allow for the model to consider multiple languages, though.
+  # Replace missing values with english, as this is a US data set and almost all in the dataset speak it (either
+  # primarily or secondarily).
+  # Don't encode, pass this through exactly as we are going to use this for a direct value look-up.
   'speaks'
 ]
 
@@ -168,7 +170,6 @@ INPUT_DATA_COLUMNS_TO_USE = [
 # Features that will likely still be one-hot encoded and need to think about:
 # * ethnicity
 # * religion
-# * speaks (should this be direct lookup?)
 
 # Input data columns not using:
 # * essay0, essay1, essay2, essay3, essay4, essay5, essay6, essay7, essay8, essay9: Skip these for now, but intend to
@@ -185,7 +186,7 @@ INPUT_DATA_COLUMNS_TO_USE = [
 #   values. Not particularly relevant for this purpose; lawyers aren't necessarily looking to date other lawyers. Might
 #   do something with this later on though.
 
-DIRECT_LOOKUP_FEATURES = ['sex', 'sexual_orientation']
+DIRECT_LOOKUP_FEATURES = ['sex', 'sexual_orientation', 'speaks']
 
 # The wider the range, the more stretched out the scale, the greater the distance of variations, the less near/similar
 # variations are, the less likely they are to be a near neighbor. Therefore, use a wider range for continuous features
@@ -199,8 +200,7 @@ CATEGORICAL_FEATURES_TO_ONE_HOT_ENCODE = [
   'ethnicity',
   'offspring',
   'pets',
-  'religion',
-  'speaks'
+  'religion'
 ]
 
 # The OrdinalEncoder assigns integers from 0 to n-1 based on the number of categories. However, not all categories have
@@ -241,7 +241,7 @@ FEATURE_SORT_ORDER = [
   r'^pets(?:_.*)?$',
   r'^religion(?:_.*)?$',
   r'^smokes$',
-  r'^speaks(?:_.*)?$'
+  r'^speaks$'
 ]
 
 def load_input_data():
@@ -373,7 +373,7 @@ def consolidate_values(data_frame):
         np.nan: 'no'
       },
       'speaks': {
-        np.nan: 'unknown'
+        np.nan: 'english'
       },
       'offspring': {
         'wants kids': 'no_kids',
