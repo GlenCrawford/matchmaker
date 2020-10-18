@@ -136,9 +136,11 @@ INPUT_DATA_COLUMNS_TO_USE = [
   # String
   # 5,511 missing values (9.2%)
   # 5 unique values: no, sometimes, etc.
-  # Map the values to integers between 0 and 5, scaled based on the frequency of smoking.
+  # Consolidate values down to a smaller number of unique values, e.g. "when drinking" to "sometimes".
   # Treat missing values as non-smokers. 81% of all non-missing values are no so it's by far the most likely value.
   # Understood that this is a very imperfect rationale.
+  # Encode the final set of unique values (no, sometimes and yes) to integers between 0 and 5, ordered and scaled based
+  # on the frequency of smoking.
   # Stretch the scale out quite large to place a higher value on similairy, as non-smokers likely value high similarity
   # on this dimension.
   'smokes',
@@ -203,6 +205,17 @@ CATEGORICAL_FEATURES_TO_ONE_HOT_ENCODE = [
   'speaks'
 ]
 
+# The OrdinalEncoder assigns integers from 0 to n-1 based on the number of categories. However, not all categories have
+# an equal scale between values. For example, there is a bigger conceptual gap between not smoking and sometimes
+# smoking, than between sometimes smoking and regularly smoking. Therefore introduce buffer values in the categories to
+# pad out the resulting scale. For smoking, this menas that the values for no, sometimes and yes will be 0, 3 and 5
+# instead of 0, 1 and 2. Is there a more standard way of doing this? Maybe, but not that I could find.
+CATEGORICAL_FEATURE_SMOKES_ORDINALITIES = ['no', 'buffer1', 'buffer2', 'sometimes', 'buffer4', 'yes']
+CATEGORICAL_FEATURES_ORDINAL_ENCODER = sklearn.preprocessing.OrdinalEncoder(
+  categories = [CATEGORICAL_FEATURE_SMOKES_ORDINALITIES],
+  dtype = int
+)
+
 # Preserve the order of the features from the input data, after both applying and reversing one-hot encoding.
 # Note that the one-hot encoded features need to match the column name(s) both with and without the encoding.
 FEATURE_SORT_ORDER = [
@@ -231,14 +244,43 @@ def load_input_data():
   )
 
 def preprocess_input_data(data_frame):
-  # Drop rows where relationship_status is unknown.
-  # Also drop rows that are seeing someone or married. Get off OkCupid.
-  # Then drop the column, as it is no longer needed outside preprocessing.
+  data_frame = filter_and_drop_relationship_status(data_frame)
+  data_frame = consolidate_values(data_frame)
+
+  # Apply one-hot encoding to categorical features.
+  data_frame = pd.get_dummies(
+    data_frame,
+    columns = CATEGORICAL_FEATURES_TO_ONE_HOT_ENCODE,
+    sparse = False
+  )
+
+  # Linearly scale/normalize continuous features.
+  data_frame[['age']] = CONTINUOUS_FEATURE_AGE_SCALER.fit_transform(data_frame[['age']].to_numpy())
+
+  # Apply ordinal/positional encodings to categorical features.
+  data_frame[['smokes']] = CATEGORICAL_FEATURES_ORDINAL_ENCODER.fit_transform(data_frame[['smokes']].to_numpy())
+
+  data_frame = Utilities.sort_data_frame(data_frame)
+
+  return data_frame
+
+# Drop rows where relationship_status is unknown.
+# Also drop rows that are seeing someone or married. Get off OkCupid.
+# Then drop the column, as it is no longer needed outside preprocessing.
+def filter_and_drop_relationship_status(data_frame):
   relationship_statuses_to_drop = ['unknown', 'seeing someone', 'married']
   data_frame = data_frame.drop(data_frame[data_frame['relationship_status'].isin(relationship_statuses_to_drop)].index)
   data_frame.drop('relationship_status', axis = 1, inplace = True)
 
-  # Per-feature value consolidation.
+  return data_frame
+
+# Per-feature value consolidation. Label encoding is a two-step process:
+# * First, consolidate a wide range of values to a smaller set to reduce the number of unique ones, e.g. "full figured"
+#   to "curvy" and "skinny" to "thin". This is irreversible.
+# * Next, in a later method, apply encodings using Scikit's encoders to turn everything into machine-usable integers.
+#   This second step is reversible.
+def consolidate_values(data_frame):
+  # First do standard string replacements.
   data_frame = data_frame.replace(
     {
       'body_type': {
@@ -315,12 +357,9 @@ def preprocess_input_data(data_frame):
         np.nan: 'unknown',
       },
       'smokes': {
-        'no': 0,
-        'sometimes': 3,
-        'when drinking': 3,
-        'trying to quit': 4,
-        'yes': 5,
-        np.nan: 0
+        'when drinking': 'sometimes',
+        'trying to quit': 'sometimes',
+        np.nan: 'no'
       },
       'speaks': {
         np.nan: 'unknown'
@@ -404,7 +443,7 @@ def preprocess_input_data(data_frame):
     }
   )
 
-  # Regular expression value consolidations.
+  # Next do regular expression value consolidations.
   data_frame = data_frame.replace(
     {
       # I am *not* mapping 217 unique values!
@@ -427,17 +466,5 @@ def preprocess_input_data(data_frame):
     },
     regex = True
   )
-
-  # Apply one-hot encoding to categorical features.
-  data_frame = pd.get_dummies(
-    data_frame,
-    columns = CATEGORICAL_FEATURES_TO_ONE_HOT_ENCODE,
-    sparse = False
-  )
-
-  # Linearly scale/normalize continuous features.
-  data_frame[['age']] = CONTINUOUS_FEATURE_AGE_SCALER.fit_transform(data_frame[['age']].to_numpy())
-
-  data_frame = Utilities.sort_data_frame(data_frame)
 
   return data_frame

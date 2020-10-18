@@ -30,6 +30,13 @@ def reverse_continuous_scaling(data_frame):
 
   return data_frame
 
+# Use the categorical features ordinal encoders (which still has its categories stored from preprocessing) to reverse
+# the encodings back to the original category labels.
+def reverse_ordinal_encoding(data_frame):
+  data_frame[['smokes']] = DataPreprocessing.CATEGORICAL_FEATURES_ORDINAL_ENCODER.inverse_transform(data_frame[['smokes']].to_numpy())
+
+  return data_frame
+
 # Apply the specified regular expression-based sort order to the columns in the data frame.
 def sort_data_frame(data_frame):
   return pd.concat([data_frame.filter(regex = regex) for regex in DataPreprocessing.FEATURE_SORT_ORDER], axis = 1)

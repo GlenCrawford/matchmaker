@@ -13,6 +13,15 @@ def main():
   input_data_frame = population_data_frame.loc[['input']]
   population_data_frame.drop('input', inplace = True)
 
+  # print('Input data frame:', input_data_frame, '\n\n')
+  # print('Population data frame:', population_data_frame[['smokes']], '\n\n')
+  #
+  # print(population_data_frame['smokes'].describe())
+  # print(population_data_frame['smokes'].value_counts(dropna = False))
+  # print(population_data_frame.filter(regex = r'^smokes(.*)$', axis = 1))
+  #
+  # exit()
+
   population_data_frame = apply_direct_lookups(input_data_frame, population_data_frame)
 
   # Get X most similar rows (nearest neighbors).
@@ -42,6 +51,9 @@ def main():
 
   population_data_frame = Utilities.reverse_continuous_scaling(population_data_frame)
   input_data_frame = Utilities.reverse_continuous_scaling(input_data_frame)
+
+  population_data_frame = Utilities.reverse_ordinal_encoding(population_data_frame)
+  input_data_frame = Utilities.reverse_ordinal_encoding(input_data_frame)
 
   # Calculate a "similarity score" of each neighbor. This is not the absolute similarity of the neighbor from the target
   # one, it's more of its percentile ranking within the distances of all rows, meaning that it's effectively its ranking
