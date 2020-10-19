@@ -26,18 +26,24 @@ def main():
     print('No results :(')
     exit()
 
-  # Get X most similar rows (nearest neighbors).
-  # By default, return the distances of all rows. This will be quite inefficient, so override this when looking for a
-  # smaller subset by specifying a smaller number when invoking .kneighbors.
-  # A formula of "minkowski" and p of 2 makes for a Euclidean distance metric.
-  # https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.NearestNeighbors.html
-  nearest_neighbors_model = NearestNeighbors(
-    n_neighbors = len(population_data_frame),
-    algorithm = 'auto',
-    metric = 'minkowski',
-    p = 2
-  ).fit(population_data_frame.loc[:, ~population_data_frame.columns.isin(DataPreprocessing.DIRECT_LOOKUP_FEATURES)])
+  nearest_neighbors_model = Serialization.load_model()
 
+  if nearest_neighbors_model is None:
+    # By default, return the distances of all rows. This will be quite inefficient, so override this when looking for a
+    # smaller subset by specifying a smaller number when invoking .kneighbors.
+    # A formula of "minkowski" and p of 2 makes for a Euclidean distance metric.
+    # https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.NearestNeighbors.html
+    print('\n\n\n FITTING \n\n\n')
+    nearest_neighbors_model = NearestNeighbors(
+      n_neighbors = len(population_data_frame),
+      algorithm = 'auto',
+      metric = 'minkowski',
+      p = 2
+    ).fit(population_data_frame.loc[:, ~population_data_frame.columns.isin(DataPreprocessing.DIRECT_LOOKUP_FEATURES)])
+
+    Serialization.save_model(nearest_neighbors_model)
+
+  # Get the similarity/distances of the entire population for the input.
   population_distances, population_indices = nearest_neighbors_model.kneighbors(
     input_data_frame.loc[:, ~input_data_frame.columns.isin(DataPreprocessing.DIRECT_LOOKUP_FEATURES)]
   )

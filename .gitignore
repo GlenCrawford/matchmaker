@@ -4,5 +4,4 @@ __pycache__/
 /data/*.csv
 
 # Trained model files.
-/models/*.pth
-/models/*.mar
+/models/*.skmodel
