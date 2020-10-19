@@ -33,7 +33,6 @@ def main():
     # smaller subset by specifying a smaller number when invoking .kneighbors.
     # A formula of "minkowski" and p of 2 makes for a Euclidean distance metric.
     # https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.NearestNeighbors.html
-    print('\n\n\n FITTING \n\n\n')
     nearest_neighbors_model = NearestNeighbors(
       n_neighbors = len(population_data_frame),
       algorithm = 'auto',
@@ -87,15 +86,11 @@ def main():
   # Fetch the neighbors' rows from the population data frame.
   nearest_neighbors_data_frame = population_data_frame.iloc[nearest_neighbors_indices].copy()
 
-  # Reverse some of the data preprocessing to make the data frame prettier for output.
-  input_data_frame = Utilities.reverse_one_hot_encoding(input_data_frame)
-  nearest_neighbors_data_frame = Utilities.reverse_one_hot_encoding(nearest_neighbors_data_frame)
-
-  input_data_frame = Utilities.reverse_continuous_scaling(input_data_frame)
-  nearest_neighbors_data_frame = Utilities.reverse_continuous_scaling(nearest_neighbors_data_frame)
-
-  input_data_frame = Utilities.reverse_ordinal_encoding(input_data_frame)
-  nearest_neighbors_data_frame = Utilities.reverse_ordinal_encoding(nearest_neighbors_data_frame)
+  # Reverse some of the data preprocessing to make the data frames prettier for output.
+  input_data_frame, nearest_neighbors_data_frame = map(
+    Utilities.reverse_preprocessing,
+    (input_data_frame, nearest_neighbors_data_frame)
+  )
 
   # Zip the similarity scores into the nearest neighbors as the first column.
   nearest_neighbors_data_frame.insert(loc = 0, column = 'score', value = nearest_neighbors_similarity_score)
@@ -124,7 +119,7 @@ def add_input_data_to_population(population_data_frame):
   ]
 
   # Override single value for testing/debugging:
-  # population_data_frame.at['input', 'speaks'] = 'french'
+  # population_data_frame.at['input', '?'] = '?'
 
   return population_data_frame
 

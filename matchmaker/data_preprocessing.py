@@ -193,7 +193,12 @@ DIRECT_LOOKUP_FEATURES = ['sex', 'sexual_orientation', 'speaks']
 # that should match more exactly, as differences will have a larger influence on similarity. And use a smaller range for
 # those that should allow more variation and have a smaller influence on similarity. Sounds counter-intuitive, but
 # reasons out.
-CONTINUOUS_FEATURE_AGE_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 0.7))
+CONTINUOUS_FEATURE_AGE_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 5))
+CONTINUOUS_FEATURE_BODY_TYPE_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 0.4))
+CONTINUOUS_FEATURE_DRINKS_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 0.7))
+CONTINUOUS_FEATURE_DRUGS_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 3))
+CONTINUOUS_FEATURE_EDUCATION_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 0.5))
+CONTINUOUS_FEATURE_SMOKES_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 3))
 
 CATEGORICAL_FEATURES_TO_ONE_HOT_ENCODE = [
   'diet',
@@ -206,14 +211,16 @@ CATEGORICAL_FEATURES_TO_ONE_HOT_ENCODE = [
 # The OrdinalEncoder assigns integers from 0 to n-1 based on the number of categories. However, not all categories have
 # an equal scale between values. For example, there is a bigger conceptual gap between not smoking and sometimes
 # smoking, than between sometimes smoking and regularly smoking. Therefore introduce buffer values in the categories to
-# pad out the resulting scale. For smoking, this menas that the values for no, sometimes and yes will be 0, 3 and 5
+# pad out the resulting scale. For smoking, this means that the values for no, sometimes and yes will be 0, 3 and 5
 # instead of 0, 1 and 2. Is there a more standard way of doing this? Maybe, but not that I could find.
 CATEGORICAL_FEATURES_TO_ORDINAL_ENCODE = ['body_type', 'drinks', 'drugs', 'education', 'smokes']
+
 CATEGORICAL_FEATURE_BODY_TYPE_ORDINALITIES = ['thin', 'fit', 'average', 'curvy', 'buffer1', 'overweight']
-CATEGORICAL_FEATURE_DRINKS_ORDINALITIES = ['never', 'rarely', 'socially', 'buffer1', 'often']
+CATEGORICAL_FEATURE_DRINKS_ORDINALITIES = ['never', 'buffer1', 'rarely', 'socially', 'buffer2', 'often']
 CATEGORICAL_FEATURE_DRUGS_ORDINALITIES = ['never', 'buffer1', 'sometimes', 'buffer2', 'often']
 CATEGORICAL_FEATURE_EDUCATION_ORDINALITIES = ['less_than_high_school', 'high_school', 'in_progress_study', 'completed_undergraduate_study', 'completed_postgraduate_study']
 CATEGORICAL_FEATURE_SMOKES_ORDINALITIES = ['no', 'buffer1', 'buffer2', 'sometimes', 'buffer4', 'yes']
+
 CATEGORICAL_FEATURES_ORDINAL_ENCODER = sklearn.preprocessing.OrdinalEncoder(
   categories = [
     CATEGORICAL_FEATURE_BODY_TYPE_ORDINALITIES,
@@ -263,13 +270,18 @@ def preprocess_input_data(data_frame):
     sparse = False
   )
 
-  # Linearly scale/normalize continuous features.
-  data_frame[['age']] = CONTINUOUS_FEATURE_AGE_SCALER.fit_transform(data_frame[['age']].to_numpy())
-
   # Apply ordinal/positional encodings to categorical features.
   data_frame[CATEGORICAL_FEATURES_TO_ORDINAL_ENCODE] = CATEGORICAL_FEATURES_ORDINAL_ENCODER.fit_transform(
     data_frame[CATEGORICAL_FEATURES_TO_ORDINAL_ENCODE].to_numpy()
   )
+
+  # Linearly scale/normalize continuous features.
+  data_frame[['age']] = CONTINUOUS_FEATURE_AGE_SCALER.fit_transform(data_frame[['age']].to_numpy())
+  data_frame[['body_type']] = CONTINUOUS_FEATURE_BODY_TYPE_SCALER.fit_transform(data_frame[['body_type']].to_numpy())
+  data_frame[['drinks']] = CONTINUOUS_FEATURE_DRINKS_SCALER.fit_transform(data_frame[['drinks']].to_numpy())
+  data_frame[['drugs']] = CONTINUOUS_FEATURE_DRUGS_SCALER.fit_transform(data_frame[['drugs']].to_numpy())
+  data_frame[['education']] = CONTINUOUS_FEATURE_EDUCATION_SCALER.fit_transform(data_frame[['education']].to_numpy())
+  data_frame[['smokes']] = CONTINUOUS_FEATURE_SMOKES_SCALER.fit_transform(data_frame[['smokes']].to_numpy())
 
   data_frame = Utilities.sort_data_frame(data_frame)
 

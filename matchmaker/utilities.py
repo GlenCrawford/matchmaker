@@ -1,6 +1,12 @@
 from . import data_preprocessing as DataPreprocessing
-
 import pandas as pd
+
+def reverse_preprocessing(data_frame):
+  data_frame = reverse_continuous_scaling(data_frame)
+  data_frame = reverse_ordinal_encoding(data_frame)
+  data_frame = reverse_one_hot_encoding(data_frame)
+
+  return data_frame
 
 # For each set of columns that were derived from a feature that was one-hot encoded during preprocessing, consolidate
 # back to a single column. E.g. columns body_type_thin and body_type_fit get merged into one column called body_type
@@ -27,6 +33,11 @@ def reverse_one_hot_encoding(data_frame):
 # preprocessing step.
 def reverse_continuous_scaling(data_frame):
   data_frame[['age']] = DataPreprocessing.CONTINUOUS_FEATURE_AGE_SCALER.inverse_transform(data_frame[['age']].to_numpy())
+  data_frame[['body_type']] = DataPreprocessing.CONTINUOUS_FEATURE_BODY_TYPE_SCALER.inverse_transform(data_frame[['body_type']].to_numpy())
+  data_frame[['drinks']] = DataPreprocessing.CONTINUOUS_FEATURE_DRINKS_SCALER.inverse_transform(data_frame[['drinks']].to_numpy())
+  data_frame[['drugs']] = DataPreprocessing.CONTINUOUS_FEATURE_DRUGS_SCALER.inverse_transform(data_frame[['drugs']].to_numpy())
+  data_frame[['education']] = DataPreprocessing.CONTINUOUS_FEATURE_EDUCATION_SCALER.inverse_transform(data_frame[['education']].to_numpy())
+  data_frame[['smokes']] = DataPreprocessing.CONTINUOUS_FEATURE_SMOKES_SCALER.inverse_transform(data_frame[['smokes']].to_numpy())
 
   return data_frame
 
