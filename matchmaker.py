@@ -2,9 +2,9 @@ from matchmaker import *
 from sklearn.neighbors import NearestNeighbors
 from scipy import stats
 
-NEAREST_NEIGHBORS_TO_RETRIEVE = 40 # Just because that's what fits on my screen ;)
-
 def main():
+  ARGUMENTS = Arguments.parse_arguments()
+
   population_data_frame = DataPreprocessing.load_input_data()
   population_data_frame = add_input_data_to_population(population_data_frame)
   population_data_frame = DataPreprocessing.preprocess_input_data(population_data_frame)
@@ -28,7 +28,8 @@ def main():
 
   nearest_neighbors_model = Serialization.load_model()
 
-  if nearest_neighbors_model is None:
+  # If there is no pre-trained model, always train a new one. If there is, use it unless forced to re-train a new one.
+  if (nearest_neighbors_model is None) or ARGUMENTS.force_training:
     # By default, return the distances of all rows. This will be quite inefficient, so override this when looking for a
     # smaller subset by specifying a smaller number when invoking .kneighbors.
     # A formula of "minkowski" and p of 2 makes for a Euclidean distance metric.
@@ -72,8 +73,8 @@ def main():
       candidates_distances.append(population_distance)
 
   # Slice out only the desired number of candidates.
-  nearest_neighbors_indices = candidates_indices[:NEAREST_NEIGHBORS_TO_RETRIEVE]
-  nearest_neighbors_distances = candidates_distances[:NEAREST_NEIGHBORS_TO_RETRIEVE]
+  nearest_neighbors_indices = candidates_indices[:ARGUMENTS.matches_to_retrieve]
+  nearest_neighbors_distances = candidates_distances[:ARGUMENTS.matches_to_retrieve]
 
   # Calculate a "similarity score" of each neighbor. This is not the absolute similarity of the neighbor from the target
   # one, it's more of its percentile ranking within the distances of all candidates, meaning that it's effectively its
