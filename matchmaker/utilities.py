@@ -34,6 +34,7 @@ def reverse_one_hot_encoding(data_frame):
 def reverse_continuous_scaling(data_frame):
   data_frame[['age']] = DataPreprocessing.CONTINUOUS_FEATURE_AGE_SCALER.inverse_transform(data_frame[['age']].to_numpy())
   data_frame[['body_type']] = DataPreprocessing.CONTINUOUS_FEATURE_BODY_TYPE_SCALER.inverse_transform(data_frame[['body_type']].to_numpy())
+  data_frame[['diet']] = DataPreprocessing.CONTINUOUS_FEATURE_DIET_SCALER.inverse_transform(data_frame[['diet']].to_numpy())
   data_frame[['drinks']] = DataPreprocessing.CONTINUOUS_FEATURE_DRINKS_SCALER.inverse_transform(data_frame[['drinks']].to_numpy())
   data_frame[['drugs']] = DataPreprocessing.CONTINUOUS_FEATURE_DRUGS_SCALER.inverse_transform(data_frame[['drugs']].to_numpy())
   data_frame[['education']] = DataPreprocessing.CONTINUOUS_FEATURE_EDUCATION_SCALER.inverse_transform(data_frame[['education']].to_numpy())

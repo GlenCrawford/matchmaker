@@ -14,9 +14,8 @@ def main():
   population_data_frame.drop('input', inplace = True)
 
   # For testing/debugging preprocessing:
-  # print(population_data_frame['speaks'].value_counts(dropna = False))
-  # print(population_data_frame.filter(regex = r'^drinks(.*)$', axis = 1))
-  #
+  # print(population_data_frame['diet'].value_counts(dropna = False))
+  # print(population_data_frame[['diet']])
   # exit()
 
   candidates_data_frame = apply_direct_lookups(input_data_frame, population_data_frame)

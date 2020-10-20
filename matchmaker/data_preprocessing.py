@@ -59,9 +59,10 @@ INPUT_DATA_COLUMNS_TO_USE = [
   # String
   # 24,389 missing values (41%)
   # 18 unique values: anything, kosher, etc.
-  # Consolidate similar values to reduce unique values to anything, vegetarian, kosher, etc.
-  # Replace missing values with anything.
-  # One-hot encode.
+  # Consolidate similar values to reduce unique values to vegan, vegetarian and anything.
+  # There are a couple of religious diets here, namely kosher and halal. Don't use those here; we have a religion
+  # feature that we'll use to factor religion in.
+  # Replace missing values with anything. Can't really assume they're vegetarian unless they say so, etc.
   'diet',
 
   # drinks:
@@ -162,7 +163,6 @@ INPUT_DATA_COLUMNS_TO_USE = [
 # Future feature engineering work:
 #
 # Consider replacing the following fields which are currently one-hot encoded into continuous values between 0 and 1.
-# * diet (maybe)
 # * offspring (maybe split into two)
 #
 # Also consider splitting pets up into two separate features: cats and dogs.
@@ -193,15 +193,18 @@ DIRECT_LOOKUP_FEATURES = ['sex', 'sexual_orientation', 'speaks']
 # that should match more exactly, as differences will have a larger influence on similarity. And use a smaller range for
 # those that should allow more variation and have a smaller influence on similarity. Sounds counter-intuitive, but
 # reasons out.
+#
+# By the way, these are 100% arbitrary based on how important I think these features are to people when dating, e.g. how
+# important is it to a vegan that their partners are also (or close to) vegan?
 CONTINUOUS_FEATURE_AGE_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 5))
 CONTINUOUS_FEATURE_BODY_TYPE_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 0.4))
+CONTINUOUS_FEATURE_DIET_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 1.5))
 CONTINUOUS_FEATURE_DRINKS_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 0.7))
 CONTINUOUS_FEATURE_DRUGS_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 3))
 CONTINUOUS_FEATURE_EDUCATION_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 0.5))
 CONTINUOUS_FEATURE_SMOKES_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 3))
 
 CATEGORICAL_FEATURES_TO_ONE_HOT_ENCODE = [
-  'diet',
   'ethnicity',
   'offspring',
   'pets',
@@ -213,9 +216,10 @@ CATEGORICAL_FEATURES_TO_ONE_HOT_ENCODE = [
 # smoking, than between sometimes smoking and regularly smoking. Therefore introduce buffer values in the categories to
 # pad out the resulting scale. For smoking, this means that the values for no, sometimes and yes will be 0, 3 and 5
 # instead of 0, 1 and 2. Is there a more standard way of doing this? Maybe, but not that I could find.
-CATEGORICAL_FEATURES_TO_ORDINAL_ENCODE = ['body_type', 'drinks', 'drugs', 'education', 'smokes']
+CATEGORICAL_FEATURES_TO_ORDINAL_ENCODE = ['body_type', 'diet', 'drinks', 'drugs', 'education', 'smokes']
 
 CATEGORICAL_FEATURE_BODY_TYPE_ORDINALITIES = ['thin', 'fit', 'average', 'curvy', 'buffer1', 'overweight']
+CATEGORICAL_FEATURE_DIET_ORDINALITIES = ['vegan', 'vegetarian', 'buffer1', 'buffer2', 'anything']
 CATEGORICAL_FEATURE_DRINKS_ORDINALITIES = ['never', 'buffer1', 'rarely', 'socially', 'buffer2', 'often']
 CATEGORICAL_FEATURE_DRUGS_ORDINALITIES = ['never', 'buffer1', 'sometimes', 'buffer2', 'often']
 CATEGORICAL_FEATURE_EDUCATION_ORDINALITIES = ['less_than_high_school', 'high_school', 'in_progress_study', 'completed_undergraduate_study', 'completed_postgraduate_study']
@@ -224,6 +228,7 @@ CATEGORICAL_FEATURE_SMOKES_ORDINALITIES = ['no', 'buffer1', 'buffer2', 'sometime
 CATEGORICAL_FEATURES_ORDINAL_ENCODER = sklearn.preprocessing.OrdinalEncoder(
   categories = [
     CATEGORICAL_FEATURE_BODY_TYPE_ORDINALITIES,
+    CATEGORICAL_FEATURE_DIET_ORDINALITIES,
     CATEGORICAL_FEATURE_DRINKS_ORDINALITIES,
     CATEGORICAL_FEATURE_DRUGS_ORDINALITIES,
     CATEGORICAL_FEATURE_EDUCATION_ORDINALITIES,
@@ -239,7 +244,7 @@ FEATURE_SORT_ORDER = [
   r'^sex$',
   r'^sexual_orientation$',
   r'^body_type$',
-  r'^diet(?:_.*)?$',
+  r'^diet$',
   r'^drinks$',
   r'^drugs$',
   r'^education$',
@@ -278,6 +283,7 @@ def preprocess_input_data(data_frame):
   # Linearly scale/normalize continuous features.
   data_frame[['age']] = CONTINUOUS_FEATURE_AGE_SCALER.fit_transform(data_frame[['age']].to_numpy())
   data_frame[['body_type']] = CONTINUOUS_FEATURE_BODY_TYPE_SCALER.fit_transform(data_frame[['body_type']].to_numpy())
+  data_frame[['diet']] = CONTINUOUS_FEATURE_DIET_SCALER.fit_transform(data_frame[['diet']].to_numpy())
   data_frame[['drinks']] = CONTINUOUS_FEATURE_DRINKS_SCALER.fit_transform(data_frame[['drinks']].to_numpy())
   data_frame[['drugs']] = CONTINUOUS_FEATURE_DRUGS_SCALER.fit_transform(data_frame[['drugs']].to_numpy())
   data_frame[['education']] = CONTINUOUS_FEATURE_EDUCATION_SCALER.fit_transform(data_frame[['education']].to_numpy())
@@ -317,18 +323,6 @@ def consolidate_values(data_frame):
         np.nan: 'average'
       },
       'diet': {
-        'mostly anything': 'anything',
-        'strictly anything': 'anything',
-        'mostly vegetarian': 'vegetarian',
-        'strictly vegetarian': 'vegetarian',
-        'mostly vegan': 'vegan',
-        'strictly vegan': 'vegan',
-        'mostly kosher': 'kosher',
-        'strictly kosher': 'kosher',
-        'mostly halal': 'halal',
-        'strictly halal': 'halal',
-        'mostly other': 'other',
-        'strictly other': 'other',
         np.nan: 'anything'
       },
       'drinks': {
@@ -469,6 +463,12 @@ def consolidate_values(data_frame):
   # Next do regular expression value consolidations.
   data_frame = data_frame.replace(
     {
+      # Filter everything down to vegan, vegetarian or other. See above for notes about reigious diets (e.g. kosher).
+      'diet': {
+        r'.*vegan.*': 'vegan',
+        r'.*vegetarian.*': 'vegetarian',
+        r'^((?!vegan|vegetarian).)*$': 'anything'
+      },
       # I am *not* mapping 217 unique values!
       'ethnicity': {
         r'^(?!white$|asian$|hispanic_latin$|black$).*': 'unknown'
