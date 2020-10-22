@@ -52,7 +52,3 @@ def reverse_ordinal_encoding(data_frame):
 # Apply the specified regular expression-based sort order to the columns in the data frame.
 def sort_data_frame(data_frame):
   return pd.concat([data_frame.filter(regex = regex) for regex in DataPreprocessing.FEATURE_SORT_ORDER], axis = 1)
-
-# Test method to get the Django web app importing the main package.
-def django_app_test():
-  return 'Matchmaker recommendations (data from module)'

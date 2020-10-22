@@ -2,7 +2,7 @@ from django.shortcuts import render
 import matchmaker as Matchmaker
 
 def recommendations(request):
-  recommendations = Matchmaker.Utilities.django_app_test
+  recommendations = 'Matchmaker recommendations (data)'
   context = {
     'recommendations': recommendations
   }
