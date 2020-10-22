@@ -57,7 +57,7 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
-            BASE_DIR / 'web/matchmaker'
+            BASE_DIR / 'web/matchmaker/templates/matchmaker'
         ],
         'APP_DIRS': True,
         'OPTIONS': {
@@ -126,6 +126,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
 STATIC_URL = '/static/'
+
+STATICFILES_DIRS = [
+    BASE_DIR / 'web/matchmaker/static/matchmaker'
+]
 
 # Activate Django-Heroku.
 django_heroku.settings(locals())
