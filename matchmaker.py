@@ -14,8 +14,8 @@ def main():
   population_data_frame.drop('input', inplace = True)
 
   # For testing/debugging preprocessing:
-  # print(population_data_frame['diet'].value_counts(dropna = False))
-  # print(population_data_frame[['diet']])
+  # print(population_data_frame['pets_dogs'].value_counts(dropna = False))
+  # print(population_data_frame[['pets_cats']])
   # exit()
 
   candidates_data_frame = apply_direct_lookups(input_data_frame, population_data_frame)
@@ -119,7 +119,7 @@ def add_input_data_to_population(population_data_frame):
   ]
 
   # Override single value for testing/debugging:
-  # population_data_frame.at['input', '?'] = '?'
+  # population_data_frame.at['input', 'pets'] = 'cats,dogs'
 
   return population_data_frame
 

@@ -3,6 +3,7 @@ import pandas as pd
 
 def reverse_preprocessing(data_frame):
   data_frame = reverse_continuous_scaling(data_frame)
+  data_frame = reverse_label_replacement_encodings(data_frame)
   data_frame = reverse_ordinal_encoding(data_frame)
   data_frame = reverse_one_hot_encoding(data_frame)
 
@@ -46,6 +47,17 @@ def reverse_continuous_scaling(data_frame):
 # the encodings back to the original category labels.
 def reverse_ordinal_encoding(data_frame):
   data_frame[DataPreprocessing.CATEGORICAL_FEATURES_TO_ORDINAL_ENCODE] = DataPreprocessing.CATEGORICAL_FEATURES_ORDINAL_ENCODER.inverse_transform(data_frame[DataPreprocessing.CATEGORICAL_FEATURES_TO_ORDINAL_ENCODE].to_numpy())
+
+  return data_frame
+
+# Reverse label replacement encodings of categorical features back to the original class labels.
+def reverse_label_replacement_encodings(data_frame):
+  data_frame = data_frame.replace(
+    {
+      'pets_cats': { value: key for key, value in DataPreprocessing.CATEGORICAL_FEATURE_PETS_CATS_LABEL_ENCODINGS.items()},
+      'pets_dogs': { value: key for key, value in DataPreprocessing.CATEGORICAL_FEATURE_PETS_DOGS_LABEL_ENCODINGS.items()}
+    }
+  )
 
   return data_frame
 

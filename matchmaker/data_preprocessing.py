@@ -117,11 +117,10 @@ INPUT_DATA_COLUMNS_TO_USE = [
   # 19,916 missing values (33.2%)
   # 15 unique values: has dogs, likes cats, etc.
   # This is a strange one; it only includes cats and dogs. So if you have a rabbit but want a dog, you might be NaN, or
-  # "likes dogs", and no mention of the rabbit. All I can really do is lump anything other than has cats and/or dogs
-  # together into unknown.
-  # Consolidate similar values to reduce unique values down to just unknown, has_cats, has_dogs, has_cats_and_dogs.
-  # Replace missing values with unknown.
-  # One-hot encode.
+  # "likes dogs", and no mention of the rabbit.
+  # Ignore the whole "likes" and "dislikes" aspect and simply turn it into a feature of what they actually have by first
+  # mapping the values into a comma-separated list of what they have (e.g. "cats,dogs"), and then dropping and replacing
+  # the column in favour of two separate columns (pets_cats and pets_dogs) which are then label-binarizer encoded.
   'pets',
 
   # religion:
@@ -165,8 +164,6 @@ INPUT_DATA_COLUMNS_TO_USE = [
 # Consider replacing the following fields which are currently one-hot encoded into continuous values between 0 and 1.
 # * offspring (maybe split into two)
 #
-# Also consider splitting pets up into two separate features: cats and dogs.
-#
 # Features that will likely still be one-hot encoded and need to think about:
 # * ethnicity
 # * religion
@@ -207,7 +204,6 @@ CONTINUOUS_FEATURE_SMOKES_SCALER = sklearn.preprocessing.MinMaxScaler(feature_ra
 CATEGORICAL_FEATURES_TO_ONE_HOT_ENCODE = [
   'ethnicity',
   'offspring',
-  'pets',
   'religion'
 ]
 
@@ -237,6 +233,11 @@ CATEGORICAL_FEATURES_ORDINAL_ENCODER = sklearn.preprocessing.OrdinalEncoder(
   dtype = int
 )
 
+# Encode (and scale) categorical features (such as cats yes/no) into a binary 0 or positive number value (depending on
+# scaling).
+CATEGORICAL_FEATURE_PETS_CATS_LABEL_ENCODINGS = { False: 0, True: 0.1 }
+CATEGORICAL_FEATURE_PETS_DOGS_LABEL_ENCODINGS = { False: 0, True: 0.1 }
+
 # Preserve the order of the features from the input data, after both applying and reversing one-hot encoding.
 # Note that the one-hot encoded features need to match the column name(s) both with and without the encoding.
 FEATURE_SORT_ORDER = [
@@ -250,7 +251,8 @@ FEATURE_SORT_ORDER = [
   r'^education$',
   r'^ethnicity(?:_.*)?$',
   r'^offspring(?:_.*)?$',
-  r'^pets(?:_.*)?$',
+  r'^pets_cats$',
+  r'^pets_dogs$',
   r'^religion(?:_.*)?$',
   r'^smokes$',
   r'^speaks$'
@@ -267,6 +269,7 @@ def load_input_data():
 def preprocess_input_data(data_frame):
   data_frame = filter_and_drop_relationship_status(data_frame)
   data_frame = consolidate_values(data_frame)
+  data_frame = split_and_drop_pets(data_frame)
 
   # Apply one-hot encoding to categorical features.
   data_frame = pd.get_dummies(
@@ -278,6 +281,14 @@ def preprocess_input_data(data_frame):
   # Apply ordinal/positional encodings to categorical features.
   data_frame[CATEGORICAL_FEATURES_TO_ORDINAL_ENCODE] = CATEGORICAL_FEATURES_ORDINAL_ENCODER.fit_transform(
     data_frame[CATEGORICAL_FEATURES_TO_ORDINAL_ENCODE].to_numpy()
+  )
+
+  # Apply label replacement encodings to categorical features.
+  data_frame = data_frame.replace(
+    {
+      'pets_cats': CATEGORICAL_FEATURE_PETS_CATS_LABEL_ENCODINGS,
+      'pets_dogs': CATEGORICAL_FEATURE_PETS_DOGS_LABEL_ENCODINGS
+    }
   )
 
   # Linearly scale/normalize continuous features.
@@ -400,22 +411,22 @@ def consolidate_values(data_frame):
         np.nan: 'unknown'
       },
       'pets': {
-        'dislikes dogs and dislikes cats': 'unknown',
-        'dislikes cats': 'unknown',
-        'dislikes dogs': 'unknown',
-        'dislikes dogs and likes cats': 'unknown',
-        'likes cats': 'unknown',
-        'likes dogs': 'unknown',
-        'likes dogs and dislikes cats': 'unknown',
-        'likes dogs and likes cats': 'unknown',
-        'has cats': 'has_cats',
-        'dislikes dogs and has cats': 'has_cats',
-        'likes dogs and has cats': 'has_cats',
-        'has dogs': 'has_dogs',
-        'has dogs and dislikes cats': 'has_dogs',
-        'has dogs and likes cats': 'has_dogs',
-        'has dogs and has cats': 'has_cats_and_dogs',
-        np.nan: 'unknown'
+        'dislikes dogs and dislikes cats': '',
+        'dislikes cats': '',
+        'dislikes dogs': '',
+        'dislikes dogs and likes cats': '',
+        'likes cats': '',
+        'likes dogs': '',
+        'likes dogs and dislikes cats': '',
+        'likes dogs and likes cats': '',
+        'has cats': 'cats',
+        'dislikes dogs and has cats': 'cats',
+        'likes dogs and has cats': 'cats',
+        'has dogs': 'dogs',
+        'has dogs and dislikes cats': 'dogs',
+        'has dogs and likes cats': 'dogs',
+        'has dogs and has cats': 'cats,dogs',
+        np.nan: ''
       },
       # Controversial...
       'religion': {
@@ -489,5 +500,13 @@ def consolidate_values(data_frame):
     },
     regex = True
   )
+
+  return data_frame
+
+def split_and_drop_pets(data_frame):
+  data_frame['pets_cats'] = data_frame['pets'].str.contains('cats')
+  data_frame['pets_dogs'] = data_frame['pets'].str.contains('dogs')
+
+  data_frame.drop('pets', axis = 1, inplace = True)
 
   return data_frame
