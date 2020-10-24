@@ -8,7 +8,7 @@ $(document).ready(function() {
       dataType: 'html',
       data: $form.serialize(),
       beforeSend: function(jqXHR, settings) {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        $('html, body').animate({ scrollTop: 0 }, 500);
 
         $('#waiting-container').addClass('d-none');
         $('#loading-container').removeClass('d-none');
@@ -18,6 +18,7 @@ $(document).ready(function() {
     }).done(function(data, textStatus, jqXHR) {
       $('#loading-container').addClass('d-none');
       $('#matches-container').removeClass('d-none').html(data);
+      $('[data-toggle="popover"]').popover();
     })
     .fail(function(jqXHR, textStatus, errorThrown) {
       $('#loading-container').addClass('d-none');
