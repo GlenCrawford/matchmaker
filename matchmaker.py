@@ -14,7 +14,8 @@ def main():
   population_data_frame.drop('input', inplace = True)
 
   # For testing/debugging preprocessing:
-  # print(population_data_frame['pets_dogs'].value_counts(dropna = False))
+  # population_data_frame = Utilities.reverse_preprocessing(population_data_frame)
+  # print(population_data_frame['smokes'].value_counts(dropna = False))
   # print(population_data_frame[['pets_cats']])
   # exit()
 

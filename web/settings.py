@@ -33,6 +33,7 @@ ALLOWED_HOSTS = ['.herokuapp.com']
 
 INSTALLED_APPS = [
     'web.matchmaker.apps.MatchmakerConfig',
+    'crispy_forms',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -130,6 +131,8 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     BASE_DIR / 'web/matchmaker/static/matchmaker'
 ]
+
+CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 # Activate Django-Heroku.
 django_heroku.settings(locals())

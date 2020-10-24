@@ -1,0 +1,25 @@
+{% extends 'layout.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+  <div class="container">
+    <div class="row">
+      <div class="col-sm-4">
+        {% crispy profile_form %}
+      </div>
+      <div class="col-sm-8">
+        <div id="waiting-container">
+          Fill out the form and hit Submit. Your matches will appear here.
+        </div>
+        <div id="loading-container" class="d-none">
+          Finding your Mr. Darcy...
+        </div>
+        <div id="matches-container" class="d-none">
+        </div>
+        <div id="error-container" class="d-none">
+          Error :(
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

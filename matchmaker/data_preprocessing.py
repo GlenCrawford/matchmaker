@@ -27,7 +27,7 @@ INPUT_DATA_COLUMNS_TO_USE = [
   # String
   # No missing values
   # 5 unique values: single (93%), seeing someone (3%), available (3%), married (0.5%), unknown (0.02%)
-  # Drop rows that are unknown, and it's kind of critical given the problem domain.
+  # Drop rows that are unknown, because that's kind of critical given the problem domain.
   # Drop rows that are seeing someone or married, because...why are they online dating?
   # Remove this feature after dropping the rows, won't need it after that.
   'relationship_status',
@@ -120,7 +120,7 @@ INPUT_DATA_COLUMNS_TO_USE = [
   # "likes dogs", and no mention of the rabbit.
   # Ignore the whole "likes" and "dislikes" aspect and simply turn it into a feature of what they actually have by first
   # mapping the values into a comma-separated list of what they have (e.g. "cats,dogs"), and then dropping and replacing
-  # the column in favour of two separate columns (pets_cats and pets_dogs) which are then label-binarizer encoded.
+  # the column in favour of two separate columns (pets_cats and pets_dogs) which are then label-replacement encoded.
   'pets',
 
   # religion:
