@@ -54,8 +54,10 @@ def reverse_ordinal_encoding(data_frame):
 def reverse_label_replacement_encodings(data_frame):
   data_frame = data_frame.replace(
     {
-      'pets_cats': { value: key for key, value in DataPreprocessing.CATEGORICAL_FEATURE_PETS_CATS_LABEL_ENCODINGS.items()},
-      'pets_dogs': { value: key for key, value in DataPreprocessing.CATEGORICAL_FEATURE_PETS_DOGS_LABEL_ENCODINGS.items()}
+      'have_children': { value: key for key, value in DataPreprocessing.CATEGORICAL_FEATURE_HAVE_CHILDREN_LABEL_ENCODINGS.items() },
+      'want_children': { value: key for key, value in DataPreprocessing.CATEGORICAL_FEATURE_WANT_CHILDREN_LABEL_ENCODINGS.items() },
+      'pets_cats': { value: key for key, value in DataPreprocessing.CATEGORICAL_FEATURE_PETS_CATS_LABEL_ENCODINGS.items() },
+      'pets_dogs': { value: key for key, value in DataPreprocessing.CATEGORICAL_FEATURE_PETS_DOGS_LABEL_ENCODINGS.items() }
     }
   )
 

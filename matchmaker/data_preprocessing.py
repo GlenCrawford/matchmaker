@@ -106,10 +106,12 @@ INPUT_DATA_COLUMNS_TO_USE = [
   # String
   # 35,554 missing values (59.3%)
   # 15 unique values: has kids, wants kids, etc.
-  # Consolidate similar values to reduce unique values down to just no_kids, no_kids_dont_want_any, has_kids,
-  # has_kids_but_no_more.
-  # replace missing values with unknown.
-  # One-hot encode.
+  # This feature annoyingly seems to be a composite of what should be two separate features: whether the person *has*
+  # children, and whether they *want* children. This would be far more useful if picked apart.
+  # Start by consolidating similar values to reduce unique values down to just no_kids, no_kids_dont_want_any, has_kids,
+  # has_kids_but_no_more. Replace missing values with no_kids, which I think is a fair assumption for a dating app.
+  # Then drop and replace the column in favour of two separate columns (have_children and want_children) which are then
+  # label-replacement encoded with an appropriate weighting.
   'offspring',
 
   # pets:
@@ -159,11 +161,6 @@ INPUT_DATA_COLUMNS_TO_USE = [
   'speaks'
 ]
 
-# Future feature engineering work:
-#
-# Consider replacing the following fields which are currently one-hot encoded into continuous values between 0 and 1.
-# * offspring (maybe split into two)
-
 # Input data columns not using:
 # * essay0, essay1, essay2, essay3, essay4, essay5, essay6, essay7, essay8, essay9: Skip these for now, but intend to
 #   use them later, possibly by layering some NLP similarity on top of the more basic features.
@@ -173,7 +170,7 @@ INPUT_DATA_COLUMNS_TO_USE = [
 # * height: Not really relevant for matchmaking. Is also going to correlate with sex and create noise in that sense.
 #   *Could* be untangled, as an academic exercise, but again, it's not relevant enough.
 # * location: The population of this dataset is entirely in and around San Francisco, California, US. There are 199
-#   unique values, such as "san francisco, california". Going to drop this and pretend that it's a local dataset. Not
+#   unique values, such as "san francisco, california". Going to drop this and pretend that it's a global dataset. Not
 #   interested in doing anything regarding location matching/radius/etc for the purposes of this project.
 # * job: This is more like industry (e.g. entertainment, banking, etc). There are also a lot of missing "other", etc
 #   values. Not particularly relevant for this purpose; lawyers aren't necessarily looking to date other lawyers. Might
@@ -199,7 +196,6 @@ CONTINUOUS_FEATURE_SMOKES_SCALER = sklearn.preprocessing.MinMaxScaler(feature_ra
 
 CATEGORICAL_FEATURES_TO_ONE_HOT_ENCODE = [
   'ethnicity',
-  'offspring',
   'religion'
 ]
 
@@ -236,6 +232,8 @@ CATEGORICAL_FEATURES_ORDINAL_ENCODER = sklearn.preprocessing.OrdinalEncoder(
 
 # Encode (and scale) categorical features (such as cats yes/no) into a binary 0 or positive number value (depending on
 # scaling).
+CATEGORICAL_FEATURE_HAVE_CHILDREN_LABEL_ENCODINGS = { False: 0, True: 1 }
+CATEGORICAL_FEATURE_WANT_CHILDREN_LABEL_ENCODINGS = { False: 0, True: 1 }
 CATEGORICAL_FEATURE_PETS_CATS_LABEL_ENCODINGS = { False: 0, True: 0.1 }
 CATEGORICAL_FEATURE_PETS_DOGS_LABEL_ENCODINGS = { False: 0, True: 0.1 }
 
@@ -251,7 +249,8 @@ FEATURE_SORT_ORDER = [
   r'^drugs$',
   r'^education$',
   r'^ethnicity(?:_.*)?$',
-  r'^offspring(?:_.*)?$',
+  r'^have_children$',
+  r'^want_children$',
   r'^pets_cats$',
   r'^pets_dogs$',
   r'^religion(?:_.*)?$',
@@ -270,6 +269,7 @@ def load_input_data():
 def preprocess_input_data(data_frame):
   data_frame = filter_and_drop_relationship_status(data_frame)
   data_frame = consolidate_values(data_frame)
+  data_frame = split_and_drop_offspring(data_frame)
   data_frame = split_and_drop_pets(data_frame)
 
   # Apply one-hot encoding to categorical features.
@@ -289,6 +289,8 @@ def preprocess_input_data(data_frame):
   # Apply label replacement encodings to categorical features.
   data_frame = data_frame.replace(
     {
+      'have_children': CATEGORICAL_FEATURE_HAVE_CHILDREN_LABEL_ENCODINGS,
+      'want_children': CATEGORICAL_FEATURE_WANT_CHILDREN_LABEL_ENCODINGS,
       'pets_cats': CATEGORICAL_FEATURE_PETS_CATS_LABEL_ENCODINGS,
       'pets_dogs': CATEGORICAL_FEATURE_PETS_DOGS_LABEL_ENCODINGS
     }
@@ -309,7 +311,7 @@ def preprocess_input_data(data_frame):
 
 # Drop rows where relationship_status is unknown.
 # Also drop rows that are seeing someone or married. Get off OkCupid.
-# Then drop the column, as it is no longer needed outside preprocessing.
+# Then drop the column, as it is not needed outside of preprocessing.
 def filter_and_drop_relationship_status(data_frame):
   relationship_statuses_to_drop = ['unknown', 'seeing someone', 'married']
   data_frame = data_frame.drop(data_frame[data_frame['relationship_status'].isin(relationship_statuses_to_drop)].index)
@@ -411,7 +413,7 @@ def consolidate_values(data_frame):
         'has kids, but doesn\'t want more': 'has_kids_but_no_more',
         'has kids, and might want more': 'has_kids',
         'has kids, and wants more': 'has_kids',
-        np.nan: 'unknown'
+        np.nan: 'no_kids'
       },
       'pets': {
         'dislikes dogs and dislikes cats': '',
@@ -503,6 +505,14 @@ def consolidate_values(data_frame):
     },
     regex = True
   )
+
+  return data_frame
+
+def split_and_drop_offspring(data_frame):
+  data_frame['have_children'] = data_frame['offspring'].str.contains('has_kids')
+  data_frame['want_children'] = data_frame['offspring'].isin(['no_kids', 'has_kids'])
+
+  data_frame.drop('offspring', axis = 1, inplace = True)
 
   return data_frame
 
