@@ -14,6 +14,11 @@ def execute(input_data, force_training, matches_to_retrieve):
   input_data_frame = population_data_frame.loc[['input']]
   population_data_frame.drop('input', inplace = True)
 
+  # population_data_frame = Utilities.reverse_preprocessing(population_data_frame)
+  # print(population_data_frame['ethnicity'].value_counts(dropna = False))
+  # print(population_data_frame.filter(regex = ("ethnicity")))
+  # exit()
+
   candidates_data_frame = apply_direct_lookups(input_data_frame, population_data_frame)
 
   # If there are no candidates to search for similarity within after applying the direct lookups, stop here.
@@ -94,6 +99,8 @@ def execute(input_data, force_training, matches_to_retrieve):
 
 def add_input_data_to_population(input_data, population_data_frame):
   population_data_frame.loc['input'] = input_data
+
+  # population_data_frame.at['input', '?'] = '?' # ?
 
   return population_data_frame
 

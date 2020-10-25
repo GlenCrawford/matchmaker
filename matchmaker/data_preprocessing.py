@@ -99,7 +99,7 @@ INPUT_DATA_COLUMNS_TO_USE = [
   # Consolidate similar values to reduce unique values. 81% of all non-missing values are white, asian, hispanic/latin
   # or black. Lump everything else into unknown. Controversial...
   # Replace missing values with unknown.
-  # One-hot encode.
+  # One-hot encode, then weight appropriately.
   'ethnicity',
 
   # offspring:
@@ -130,7 +130,7 @@ INPUT_DATA_COLUMNS_TO_USE = [
   # Consolidate similar values to reduce unique values down to just atheism, agnosticism, buddhism, hinduism, islam,
   # judaism, christianity, catholicism, other.
   # Replace missing values with unknown.
-  # One-hot encode.
+  # One-hot encode, then weight appropriately.
   'religion',
 
   # smokes:
@@ -163,10 +163,6 @@ INPUT_DATA_COLUMNS_TO_USE = [
 #
 # Consider replacing the following fields which are currently one-hot encoded into continuous values between 0 and 1.
 # * offspring (maybe split into two)
-#
-# Features that will likely still be one-hot encoded and need to think about:
-# * ethnicity
-# * religion
 
 # Input data columns not using:
 # * essay0, essay1, essay2, essay3, essay4, essay5, essay6, essay7, essay8, essay9: Skip these for now, but intend to
@@ -206,6 +202,11 @@ CATEGORICAL_FEATURES_TO_ONE_HOT_ENCODE = [
   'offspring',
   'religion'
 ]
+
+# One-hot encoding traditionally gives the "active" column a value of 1, which doesn't work well in a distance-based
+# model like this. Replace the 1s with a more appropriate value to weight these features more appropriately.
+CATEGORICAL_FEATURE_ETHNICITY_SCALE = 0.1
+CATEGORICAL_FEATURE_RELIGION_SCALE = 0.5
 
 # The OrdinalEncoder assigns integers from 0 to n-1 based on the number of categories. However, not all categories have
 # an equal scale between values. For example, there is a bigger conceptual gap between not smoking and sometimes
@@ -277,6 +278,8 @@ def preprocess_input_data(data_frame):
     columns = CATEGORICAL_FEATURES_TO_ONE_HOT_ENCODE,
     sparse = False
   )
+
+  data_frame = apply_scaling_to_one_hot_encodings(data_frame)
 
   # Apply ordinal/positional encodings to categorical features.
   data_frame[CATEGORICAL_FEATURES_TO_ORDINAL_ENCODE] = CATEGORICAL_FEATURES_ORDINAL_ENCODER.fit_transform(
@@ -508,5 +511,18 @@ def split_and_drop_pets(data_frame):
   data_frame['pets_dogs'] = data_frame['pets'].str.contains('dogs')
 
   data_frame.drop('pets', axis = 1, inplace = True)
+
+  return data_frame
+
+def apply_scaling_to_one_hot_encodings(data_frame):
+  data_frame.replace(
+    { column: { 1: CATEGORICAL_FEATURE_ETHNICITY_SCALE } for column in data_frame.columns if column.startswith('ethnicity') },
+    inplace = True
+  )
+
+  data_frame.replace(
+    { column: { 1: CATEGORICAL_FEATURE_RELIGION_SCALE } for column in data_frame.columns if column.startswith('religion') },
+    inplace = True
+  )
 
   return data_frame
