@@ -21,6 +21,19 @@ $(document).ready(function() {
       $('[data-toggle="popover"]').popover();
     })
     .fail(function(jqXHR, textStatus, errorThrown) {
+      if (jqXHR.status == 422) {
+        var humanized_validation_errors = [];
+        $.each(JSON.parse(jqXHR.responseText), function(field, errors) {
+          $.each(errors, function(index, error) {
+            humanized_validation_errors.push(field + ': ' + error['message']);
+          });
+        });
+        $('#error-container').html('Form errors:<br />' + humanized_validation_errors.join('<br />'));
+      }
+      else {
+        $('#error-container').html('Error :(');
+      }
+
       $('#loading-container').addClass('d-none');
       $('#error-container').removeClass('d-none');
     });
