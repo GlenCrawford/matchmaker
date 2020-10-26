@@ -1,20 +1,20 @@
 <div class="row row-cols-1 row-cols-md-2">
-  {% for i in '0123456789'|make_list %}
+  {% for match in matches %}
     <div class="col mb-4">
       <div class="card">
         <div class="card-body">
-          <h5 class="card-title">John Smith (30)</h5>
-          <h6 class="card-subtitle mb-2 text-muted">Score: 99.99% <small><em>(<a tabindex="0" data-toggle="popover" data-placement="right" data-trigger="focus" title="What is the score?" data-content="This score represents the rank of this match compared to you. It is less of an absolute similarity score between you and the match, and more of its percentile/ranking among all possible candidates.">what's this?</a>)</em></small></h6>
-          <h6 class="card-subtitle mb-2 text-muted">Male, straight</h6>
-          <h6 class="card-subtitle mb-2 text-muted">White, speaks English</h6>
+          <h5 class="card-title">{{ match.name }} ({{ match.age }})</h5>
+          <h6 class="card-subtitle mb-2 text-muted">Score: {{ match.score }}% <small><em>(<a tabindex="0" data-toggle="popover" data-placement="right" data-trigger="focus" title="What is the score?" data-content="This score represents the rank of this match compared to you. It is less of an absolute similarity score between you and the match, and more of its percentile/ranking among all possible candidates.">what's this?</a>)</em></small></h6>
+          <h6 class="card-subtitle mb-2 text-muted">{{ match.sex }}, {{ match.sexual_orientation }}</h6>
+          <h6 class="card-subtitle mb-2 text-muted">{{ match.ethnicity }}, speaks {{ match.speaks }}</h6>
         </div>
         <ul class="list-group list-group-flush">
-          <li class="list-group-item">Religion: Christianity</li>
-          <li class="list-group-item">Education level: Completed undergraduate study</li>
-          <li class="list-group-item">Children: Has children, wants more</li>
-          <li class="list-group-item">Body type: Fit</li>
-          <li class="list-group-item">Diet: Anything, Drinks: Rarely, Smokes: No, Drugs: Never</li>
-          <li class="list-group-item">Pets: Dog(s)</li>
+          <li class="list-group-item">Religion: {{ match.religion }}</li>
+          <li class="list-group-item">Education level: {{ match.education }}</li>
+          <li class="list-group-item">Children: {{ match.have_children }}, {{ match.want_children }}</li>
+          <li class="list-group-item">Body type: {{ match.body_type }}</li>
+          <li class="list-group-item">Diet: {{ match.diet }}, Drinks: {{ match.drinks }}, Smokes: {{ match.smokes }}, Drugs: {{ match.drugs }}</li>
+          <li class="list-group-item">Pets: {{ match.pets_cats }}, {{ match.pets_dogs }}</li>
         </ul>
       </div>
     </div>

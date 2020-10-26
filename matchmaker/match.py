@@ -1,3 +1,5 @@
+import names
+
 class Match:
   def __init__(self, match_row):
     self.__score = match_row['score']
@@ -17,6 +19,11 @@ class Match:
     self.__religion = match_row['religion']
     self.__smokes = match_row['smokes']
     self.__speaks = match_row['speaks']
+
+  # The training data is anonymized, so generate random names to make the profile look more real.
+  def name(self):
+    name_gender = { 'm': 'male', 'f': 'female' }[self.__sex]
+    return names.get_full_name(gender = name_gender)
 
   # The following are decorator methods, one per attribute.
 

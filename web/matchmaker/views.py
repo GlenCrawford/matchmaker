@@ -43,7 +43,7 @@ def matches(request):
       return HttpResponse('No matches :(')
     else:
       context = {
-        matches: [Matchmaker.Match.Match(match_row) for index, match_row in matches_data_frame.iterrows()]
+        'matches': [Matchmaker.Match.Match(match_row) for index, match_row in matches_data_frame.iterrows()]
       }
 
       return render(request, 'matches.html', context)
