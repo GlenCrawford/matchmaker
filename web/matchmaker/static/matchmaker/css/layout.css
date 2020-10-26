@@ -5,3 +5,8 @@ body {
 .jumbotron {
   padding: 2rem;
 }
+
+.indent-wrap-after-emoji {
+  padding-left: 2.6em;
+  text-indent: -1.3em;
+}
