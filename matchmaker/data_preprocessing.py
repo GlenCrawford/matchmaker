@@ -1,5 +1,7 @@
 from . import utilities as Utilities
 
+import glob
+import os.path
 import numpy as np
 import pandas as pd
 import sklearn
@@ -8,7 +10,7 @@ from sklearn import preprocessing
 pd.set_option('display.min_rows', 25)
 
 # Relative from the project root directory.
-INPUT_DATA_PATH = 'data/okcupid_profiles.csv'
+INPUT_DATA_FILE_PATHS = sorted(glob.glob(os.path.join('data/okcupid_profiles_*.csv')))
 
 INPUT_DATA_COLUMN_NAMES = [
   'age', 'relationship_status', 'sex', 'sexual_orientation', 'body_type', 'diet', 'drinks', 'drugs', 'education',
@@ -259,12 +261,12 @@ FEATURE_SORT_ORDER = [
 ]
 
 def load_input_data():
-  return pd.read_csv(
-    INPUT_DATA_PATH,
+  return pd.concat([pd.read_csv(
+    input_data_file_path,
     header = 0,
     names = INPUT_DATA_COLUMN_NAMES,
     usecols = INPUT_DATA_COLUMNS_TO_USE
-  )
+  ) for input_data_file_path in INPUT_DATA_FILE_PATHS], ignore_index = True)
 
 def preprocess_input_data(data_frame):
   data_frame = filter_and_drop_relationship_status(data_frame)
