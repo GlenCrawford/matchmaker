@@ -36,15 +36,14 @@ def matches(request):
         profile_form.cleaned_data['speaks']
       ],
       force_training = True,
-      matches_to_retrieve = 10
+      matches_to_retrieve = 50
     )
 
     if len(matches_data_frame) == 0:
       return HttpResponse('No matches :(')
     else:
-      print(matches_data_frame)
       context = {
-        #
+        matches: [Matchmaker.Match.Match(match_row) for index, match_row in matches_data_frame.iterrows()]
       }
 
       return render(request, 'matches.html', context)
