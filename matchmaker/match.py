@@ -61,15 +61,28 @@ class Match:
     return 'Has children' if self.__have_children else 'Does not have children'
 
   def want_children(self):
-    # TODO: Can make this better in combination with have_children.
-    return 'wants them' if self.__want_children else 'don\'t want any/more'
+    if self.__want_children:
+      if self.__have_children:
+        return 'wants more'
+      else:
+        return 'wants them'
+    else:
+      if self.__have_children:
+        return 'don\'t want any more'
+      else:
+        return 'doesn\'t want any'
 
   def pets_cats(self):
     return 'Has cat(s)' if self.__pets_cats else 'Does not have cat(s)'
 
   def pets_dogs(self):
-    # TODO: Can maybe combine both pets and dogs into a better combined string.
-    return 'has dog(s)' if self.__pets_dogs else 'does not have dog(s)'
+    if self.__pets_dogs:
+      return 'has dog(s)'
+    else:
+      if self.__pets_cats:
+        return 'does not have dog(s)'
+      else:
+        return 'and does not have dog(s)'
 
   def religion(self):
     return self.__religion.capitalize()
