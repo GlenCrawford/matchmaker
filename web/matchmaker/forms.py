@@ -1,6 +1,7 @@
 from django import forms
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Submit
+from crispy_forms.layout import Layout, Fieldset, ButtonHolder, Submit
+from crispy_forms.bootstrap import InlineRadios
 
 class ProfileForm(forms.Form):
   def __init__(self, *args, **kwargs):
@@ -10,7 +11,30 @@ class ProfileForm(forms.Form):
     self.helper.form_method = 'post'
     self.helper.form_action = 'matches'
 
-    self.helper.add_input(Submit('submit', 'Submit'))
+    self.helper.layout = Layout(
+      Fieldset(
+        'About you:',
+        InlineRadios('sex'),
+        InlineRadios('sexual_orientation'),
+        'age',
+        'relationship_status'
+      ),
+      Fieldset(
+        'What you\'re looking for:',
+        'ethnicity',
+        'speaks',
+        'religion',
+        'education',
+        'offspring',
+        'body_type',
+        'diet',
+        'drinks',
+        'smokes',
+        'drugs',
+        'pets'
+      ),
+      ButtonHolder(Submit('submit', 'Submit'))
+    )
 
   # Fields.
   sex = forms.ChoiceField(widget = forms.RadioSelect, label = 'Sex', required = True, choices = [('m', 'Male'), ('f', 'Female')])
