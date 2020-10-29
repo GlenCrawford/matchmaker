@@ -5,6 +5,9 @@ def main():
 
   # This command-line interface is more for testing than actual use, so hard-code test input values in.
   # The web interface allows for dynamic values to be passed in for "real" use.
+  #
+  # Note that the following fields are about the user: age, relationship_status, sex, sexual_orientation. All other
+  # fields represent what attributes the user is looking for.
   input_data = [
     '30', # age
     'single', # relationship_status
