@@ -196,6 +196,8 @@ CONTINUOUS_FEATURE_DRUGS_SCALER = sklearn.preprocessing.MinMaxScaler(feature_ran
 CONTINUOUS_FEATURE_EDUCATION_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 0.5))
 CONTINUOUS_FEATURE_SMOKES_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 3))
 
+CATEGORICAL_FEATURES_ONE_HOT_ENCODER = sklearn.preprocessing.OneHotEncoder(sparse = False)
+
 CATEGORICAL_FEATURES_TO_ONE_HOT_ENCODE = [
   'ethnicity',
   'religion'
@@ -268,6 +270,16 @@ def load_input_data():
     usecols = INPUT_DATA_COLUMNS_TO_USE
   ) for input_data_file_path in INPUT_DATA_FILE_PATHS], ignore_index = True)
 
+# After dropping rows, use this to re-index the data frame. Need to use this so that concatenation of dataframes can be
+# done cleanly. Make sure to preserve the "input" index.
+def reindex_data_frame(data_frame):
+  data_frame.reset_index(drop = False, inplace = True)
+  input_index = data_frame.loc[data_frame['index'] == 'input'].index[0]
+  data_frame.rename(index = { input_index: 'input' }, inplace = True)
+  data_frame.drop('index', axis = 1, inplace = True)
+
+  return data_frame
+
 def preprocess_input_data(data_frame):
   data_frame = filter_and_drop_relationship_status(data_frame)
   data_frame = consolidate_values(data_frame)
@@ -275,11 +287,19 @@ def preprocess_input_data(data_frame):
   data_frame = split_and_drop_pets(data_frame)
 
   # Apply one-hot encoding to categorical features.
-  data_frame = pd.get_dummies(
-    data_frame,
-    columns = CATEGORICAL_FEATURES_TO_ONE_HOT_ENCODE,
-    sparse = False
+  categorical_features_one_hot_encoded_data_frame = pd.DataFrame(
+    CATEGORICAL_FEATURES_ONE_HOT_ENCODER.fit_transform(data_frame[CATEGORICAL_FEATURES_TO_ONE_HOT_ENCODE]),
+    columns = CATEGORICAL_FEATURES_ONE_HOT_ENCODER.get_feature_names(input_features = CATEGORICAL_FEATURES_TO_ONE_HOT_ENCODE)
   )
+  categorical_features_one_hot_encoded_data_frame.rename(
+    index = { (len(categorical_features_one_hot_encoded_data_frame) - 1): 'input' },
+    inplace = True
+  )
+  data_frame = pd.concat(
+    [data_frame, categorical_features_one_hot_encoded_data_frame],
+    axis = 1
+  )
+  data_frame.drop(CATEGORICAL_FEATURES_TO_ONE_HOT_ENCODE, axis = 1, inplace = True)
 
   data_frame = apply_scaling_to_one_hot_encodings(data_frame)
 
@@ -318,6 +338,8 @@ def filter_and_drop_relationship_status(data_frame):
   relationship_statuses_to_drop = ['unknown', 'seeing someone', 'married']
   data_frame = data_frame.drop(data_frame[data_frame['relationship_status'].isin(relationship_statuses_to_drop)].index)
   data_frame.drop('relationship_status', axis = 1, inplace = True)
+
+  data_frame = reindex_data_frame(data_frame)
 
   return data_frame
 
