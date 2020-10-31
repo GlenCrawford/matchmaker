@@ -14,8 +14,7 @@ def execute(input_data, force_training, matches_to_retrieve):
   input_data_frame = population_data_frame.loc[['input']]
   population_data_frame.drop('input', inplace = True)
 
-  # print(input_data_frame.filter(regex = r'ethnicity'))
-  # print(input_data_frame.filter(regex = r'religion'))
+  # print(input_data_frame)
   # exit()
 
   candidates_data_frame = apply_direct_lookups(input_data_frame, population_data_frame)

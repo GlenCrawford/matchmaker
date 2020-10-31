@@ -224,18 +224,6 @@ CATEGORICAL_FEATURE_DRUGS_ORDINALITIES = ['never', 'buffer1', 'sometimes', 'buff
 CATEGORICAL_FEATURE_EDUCATION_ORDINALITIES = ['less_than_high_school', 'high_school', 'in_progress_study', 'completed_undergraduate_study', 'completed_postgraduate_study']
 CATEGORICAL_FEATURE_SMOKES_ORDINALITIES = ['no', 'buffer1', 'buffer2', 'sometimes', 'buffer4', 'yes']
 
-CATEGORICAL_FEATURES_ORDINAL_ENCODER = sklearn.preprocessing.OrdinalEncoder(
-  categories = [
-    CATEGORICAL_FEATURE_BODY_TYPE_ORDINALITIES,
-    CATEGORICAL_FEATURE_DIET_ORDINALITIES,
-    CATEGORICAL_FEATURE_DRINKS_ORDINALITIES,
-    CATEGORICAL_FEATURE_DRUGS_ORDINALITIES,
-    CATEGORICAL_FEATURE_EDUCATION_ORDINALITIES,
-    CATEGORICAL_FEATURE_SMOKES_ORDINALITIES
-  ],
-  dtype = int
-)
-
 # Encode (and scale) categorical features (such as cats yes/no) into a binary 0 or positive number value (depending on
 # scaling).
 CATEGORICAL_FEATURE_HAVE_CHILDREN_LABEL_ENCODINGS = { False: 0, True: 1 }
@@ -310,9 +298,9 @@ def preprocess_input_data(data_frame, use_fitted_encoders):
   data_frame = apply_scaling_to_one_hot_encodings(data_frame)
 
   # Apply ordinal/positional encodings to categorical features.
-  data_frame[CATEGORICAL_FEATURES_TO_ORDINAL_ENCODE] = CATEGORICAL_FEATURES_ORDINAL_ENCODER.fit_transform(
-    data_frame[CATEGORICAL_FEATURES_TO_ORDINAL_ENCODE].to_numpy()
-  )
+  if use_fitted_encoders is False:
+    CATEGORICAL_FEATURES_ORDINAL_ENCODER.fit(data_frame[CATEGORICAL_FEATURES_TO_ORDINAL_ENCODE])
+  data_frame[CATEGORICAL_FEATURES_TO_ORDINAL_ENCODE] = CATEGORICAL_FEATURES_ORDINAL_ENCODER.transform(data_frame[CATEGORICAL_FEATURES_TO_ORDINAL_ENCODE])
 
   # Apply label replacement encodings to categorical features.
   data_frame = data_frame.replace(
@@ -588,6 +576,7 @@ def build_encoders(use_fitted_encoders):
   global CONTINUOUS_FEATURE_EDUCATION_SCALER
   global CONTINUOUS_FEATURE_SMOKES_SCALER
   global CATEGORICAL_FEATURES_ONE_HOT_ENCODER
+  global CATEGORICAL_FEATURES_ORDINAL_ENCODER
 
   if use_fitted_encoders is True:
     CONTINUOUS_FEATURE_AGE_SCALER = joblib.load(os.path.join(FITTED_ENCODERS_DIRECTORY, 'continuous_feature_age_scaler.skencoder'))
@@ -599,6 +588,8 @@ def build_encoders(use_fitted_encoders):
     CONTINUOUS_FEATURE_SMOKES_SCALER = joblib.load(os.path.join(FITTED_ENCODERS_DIRECTORY, 'continuous_feature_smokes_scaler.skencoder'))
 
     CATEGORICAL_FEATURES_ONE_HOT_ENCODER = joblib.load(os.path.join(FITTED_ENCODERS_DIRECTORY, 'categorical_features_one_hot_encoder.skencoder'))
+
+    CATEGORICAL_FEATURES_ORDINAL_ENCODER = joblib.load(os.path.join(FITTED_ENCODERS_DIRECTORY, 'categorical_features_ordinal_encoder.skencoder'))
   else:
     # Initialize new encoders.
     CONTINUOUS_FEATURE_AGE_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = CONTINUOUS_FEATURE_AGE_SCALER_RANGE)
@@ -611,6 +602,18 @@ def build_encoders(use_fitted_encoders):
 
     CATEGORICAL_FEATURES_ONE_HOT_ENCODER = sklearn.preprocessing.OneHotEncoder(sparse = False)
 
+    CATEGORICAL_FEATURES_ORDINAL_ENCODER = sklearn.preprocessing.OrdinalEncoder(
+      categories = [
+        CATEGORICAL_FEATURE_BODY_TYPE_ORDINALITIES,
+        CATEGORICAL_FEATURE_DIET_ORDINALITIES,
+        CATEGORICAL_FEATURE_DRINKS_ORDINALITIES,
+        CATEGORICAL_FEATURE_DRUGS_ORDINALITIES,
+        CATEGORICAL_FEATURE_EDUCATION_ORDINALITIES,
+        CATEGORICAL_FEATURE_SMOKES_ORDINALITIES
+      ],
+      dtype = int
+    )
+
 def save_fitted_encoders():
   joblib.dump(CONTINUOUS_FEATURE_AGE_SCALER, os.path.join(FITTED_ENCODERS_DIRECTORY, 'continuous_feature_age_scaler.skencoder'))
   joblib.dump(CONTINUOUS_FEATURE_BODY_TYPE_SCALER, os.path.join(FITTED_ENCODERS_DIRECTORY, 'continuous_feature_body_type_scaler.skencoder'))
@@ -621,3 +624,5 @@ def save_fitted_encoders():
   joblib.dump(CONTINUOUS_FEATURE_SMOKES_SCALER, os.path.join(FITTED_ENCODERS_DIRECTORY, 'continuous_feature_smokes_scaler.skencoder'))
 
   joblib.dump(CATEGORICAL_FEATURES_ONE_HOT_ENCODER, os.path.join(FITTED_ENCODERS_DIRECTORY, 'categorical_features_one_hot_encoder.skencoder'))
+
+  joblib.dump(CATEGORICAL_FEATURES_ORDINAL_ENCODER, os.path.join(FITTED_ENCODERS_DIRECTORY, 'categorical_features_ordinal_encoder.skencoder'))
