@@ -5,3 +5,6 @@ __pycache__/
 
 # Trained model files.
 /models/*.skmodel
+
+# Fitted encoder files.
+/models/encoders/*.skencoder

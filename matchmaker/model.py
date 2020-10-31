@@ -8,7 +8,7 @@ from . import utilities as Utilities
 def execute(input_data, force_training, matches_to_retrieve):
   population_data_frame = DataPreprocessing.load_input_data()
   population_data_frame = add_input_data_to_population(input_data, population_data_frame)
-  population_data_frame = DataPreprocessing.preprocess_input_data(population_data_frame)
+  population_data_frame = DataPreprocessing.preprocess_input_data(population_data_frame, use_fitted_encoders = True)
 
   # Now they have been preprocessed together, extract out the input row as a data frame.
   input_data_frame = population_data_frame.loc[['input']]

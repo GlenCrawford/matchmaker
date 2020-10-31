@@ -2,6 +2,7 @@ from . import utilities as Utilities
 
 import glob
 import os.path
+import joblib
 import numpy as np
 import pandas as pd
 import sklearn
@@ -180,6 +181,9 @@ INPUT_DATA_COLUMNS_TO_USE = [
 
 DIRECT_LOOKUP_FEATURES = ['sex', 'sexual_orientation', 'speaks']
 
+# Relative from the project root directory.
+FITTED_ENCODERS_DIRECTORY = 'models/encoders/'
+
 # The wider the range, the more stretched out the scale, the greater the distance of variations, the less near/similar
 # variations are, the less likely they are to be a near neighbor. Therefore, use a wider range for continuous features
 # that should match more exactly, as differences will have a larger influence on similarity. And use a smaller range for
@@ -195,8 +199,6 @@ CONTINUOUS_FEATURE_DRINKS_SCALER = sklearn.preprocessing.MinMaxScaler(feature_ra
 CONTINUOUS_FEATURE_DRUGS_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 3))
 CONTINUOUS_FEATURE_EDUCATION_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 0.5))
 CONTINUOUS_FEATURE_SMOKES_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 3))
-
-CATEGORICAL_FEATURES_ONE_HOT_ENCODER = sklearn.preprocessing.OneHotEncoder(sparse = False)
 
 CATEGORICAL_FEATURES_TO_ONE_HOT_ENCODE = [
   'ethnicity',
@@ -280,15 +282,19 @@ def reindex_data_frame(data_frame):
 
   return data_frame
 
-def preprocess_input_data(data_frame):
+def preprocess_input_data(data_frame, use_fitted_encoders):
   data_frame = filter_and_drop_relationship_status(data_frame)
   data_frame = consolidate_values(data_frame)
   data_frame = split_and_drop_offspring(data_frame)
   data_frame = split_and_drop_pets(data_frame)
 
+  build_encoders(use_fitted_encoders)
+
   # Apply one-hot encoding to categorical features.
+  if use_fitted_encoders is False:
+    CATEGORICAL_FEATURES_ONE_HOT_ENCODER.fit(data_frame[CATEGORICAL_FEATURES_TO_ONE_HOT_ENCODE])
   categorical_features_one_hot_encoded_data_frame = pd.DataFrame(
-    CATEGORICAL_FEATURES_ONE_HOT_ENCODER.fit_transform(data_frame[CATEGORICAL_FEATURES_TO_ONE_HOT_ENCODE]),
+    CATEGORICAL_FEATURES_ONE_HOT_ENCODER.transform(data_frame[CATEGORICAL_FEATURES_TO_ONE_HOT_ENCODE]),
     columns = CATEGORICAL_FEATURES_ONE_HOT_ENCODER.get_feature_names(input_features = CATEGORICAL_FEATURES_TO_ONE_HOT_ENCODE)
   )
   categorical_features_one_hot_encoded_data_frame.rename(
@@ -326,6 +332,9 @@ def preprocess_input_data(data_frame):
   data_frame[['drugs']] = CONTINUOUS_FEATURE_DRUGS_SCALER.fit_transform(data_frame[['drugs']].to_numpy())
   data_frame[['education']] = CONTINUOUS_FEATURE_EDUCATION_SCALER.fit_transform(data_frame[['education']].to_numpy())
   data_frame[['smokes']] = CONTINUOUS_FEATURE_SMOKES_SCALER.fit_transform(data_frame[['smokes']].to_numpy())
+
+  if use_fitted_encoders is False:
+    save_fitted_encoders()
 
   data_frame = Utilities.sort_data_frame(data_frame)
 
@@ -560,3 +569,19 @@ def apply_scaling_to_one_hot_encodings(data_frame):
   )
 
   return data_frame
+
+def build_encoders(use_fitted_encoders):
+  global CATEGORICAL_FEATURES_ONE_HOT_ENCODER
+
+  if use_fitted_encoders is True:
+    load_fitted_encoders()
+  else:
+    CATEGORICAL_FEATURES_ONE_HOT_ENCODER = sklearn.preprocessing.OneHotEncoder(sparse = False)
+
+def load_fitted_encoders():
+  global CATEGORICAL_FEATURES_ONE_HOT_ENCODER
+
+  CATEGORICAL_FEATURES_ONE_HOT_ENCODER = joblib.load(os.path.join(FITTED_ENCODERS_DIRECTORY, 'one_hot_encoder.skencoder'))
+
+def save_fitted_encoders():
+  joblib.dump(CATEGORICAL_FEATURES_ONE_HOT_ENCODER, os.path.join(FITTED_ENCODERS_DIRECTORY, 'one_hot_encoder.skencoder'))
