@@ -192,13 +192,13 @@ FITTED_ENCODERS_DIRECTORY = 'models/encoders/'
 #
 # By the way, these are 100% arbitrary based on how important I think these features are to people when dating, e.g. how
 # important is it to a vegan that their partners are also (or close to) vegan?
-CONTINUOUS_FEATURE_AGE_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 5))
-CONTINUOUS_FEATURE_BODY_TYPE_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 0.4))
-CONTINUOUS_FEATURE_DIET_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 1.5))
-CONTINUOUS_FEATURE_DRINKS_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 0.7))
-CONTINUOUS_FEATURE_DRUGS_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 3))
-CONTINUOUS_FEATURE_EDUCATION_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 0.5))
-CONTINUOUS_FEATURE_SMOKES_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 3))
+CONTINUOUS_FEATURE_AGE_SCALER_RANGE = (0, 5)
+CONTINUOUS_FEATURE_BODY_TYPE_SCALER_RANGE = (0, 0.4)
+CONTINUOUS_FEATURE_DIET_SCALER_RANGE = (0, 1.5)
+CONTINUOUS_FEATURE_DRINKS_SCALER_RANGE = (0, 0.7)
+CONTINUOUS_FEATURE_DRUGS_SCALER_RANGE = (0, 3)
+CONTINUOUS_FEATURE_EDUCATION_SCALER_RANGE = (0, 0.5)
+CONTINUOUS_FEATURE_SMOKES_SCALER_RANGE = (0, 3)
 
 CATEGORICAL_FEATURES_TO_ONE_HOT_ENCODE = [
   'ethnicity',
@@ -325,13 +325,22 @@ def preprocess_input_data(data_frame, use_fitted_encoders):
   )
 
   # Linearly scale/normalize continuous features.
-  data_frame[['age']] = CONTINUOUS_FEATURE_AGE_SCALER.fit_transform(data_frame[['age']].to_numpy())
-  data_frame[['body_type']] = CONTINUOUS_FEATURE_BODY_TYPE_SCALER.fit_transform(data_frame[['body_type']].to_numpy())
-  data_frame[['diet']] = CONTINUOUS_FEATURE_DIET_SCALER.fit_transform(data_frame[['diet']].to_numpy())
-  data_frame[['drinks']] = CONTINUOUS_FEATURE_DRINKS_SCALER.fit_transform(data_frame[['drinks']].to_numpy())
-  data_frame[['drugs']] = CONTINUOUS_FEATURE_DRUGS_SCALER.fit_transform(data_frame[['drugs']].to_numpy())
-  data_frame[['education']] = CONTINUOUS_FEATURE_EDUCATION_SCALER.fit_transform(data_frame[['education']].to_numpy())
-  data_frame[['smokes']] = CONTINUOUS_FEATURE_SMOKES_SCALER.fit_transform(data_frame[['smokes']].to_numpy())
+  if use_fitted_encoders is False:
+    CONTINUOUS_FEATURE_AGE_SCALER.fit(data_frame[['age']])
+    CONTINUOUS_FEATURE_BODY_TYPE_SCALER.fit(data_frame[['body_type']])
+    CONTINUOUS_FEATURE_DIET_SCALER.fit(data_frame[['diet']])
+    CONTINUOUS_FEATURE_DRINKS_SCALER.fit(data_frame[['drinks']])
+    CONTINUOUS_FEATURE_DRUGS_SCALER.fit(data_frame[['drugs']])
+    CONTINUOUS_FEATURE_EDUCATION_SCALER.fit(data_frame[['education']])
+    CONTINUOUS_FEATURE_SMOKES_SCALER.fit(data_frame[['smokes']])
+
+  data_frame[['age']] = CONTINUOUS_FEATURE_AGE_SCALER.transform(data_frame[['age']])
+  data_frame[['body_type']] = CONTINUOUS_FEATURE_BODY_TYPE_SCALER.transform(data_frame[['body_type']])
+  data_frame[['diet']] = CONTINUOUS_FEATURE_DIET_SCALER.transform(data_frame[['diet']])
+  data_frame[['drinks']] = CONTINUOUS_FEATURE_DRINKS_SCALER.transform(data_frame[['drinks']])
+  data_frame[['drugs']] = CONTINUOUS_FEATURE_DRUGS_SCALER.transform(data_frame[['drugs']])
+  data_frame[['education']] = CONTINUOUS_FEATURE_EDUCATION_SCALER.transform(data_frame[['education']])
+  data_frame[['smokes']] = CONTINUOUS_FEATURE_SMOKES_SCALER.transform(data_frame[['smokes']])
 
   if use_fitted_encoders is False:
     save_fitted_encoders()
@@ -571,17 +580,44 @@ def apply_scaling_to_one_hot_encodings(data_frame):
   return data_frame
 
 def build_encoders(use_fitted_encoders):
+  global CONTINUOUS_FEATURE_AGE_SCALER
+  global CONTINUOUS_FEATURE_BODY_TYPE_SCALER
+  global CONTINUOUS_FEATURE_DIET_SCALER
+  global CONTINUOUS_FEATURE_DRINKS_SCALER
+  global CONTINUOUS_FEATURE_DRUGS_SCALER
+  global CONTINUOUS_FEATURE_EDUCATION_SCALER
+  global CONTINUOUS_FEATURE_SMOKES_SCALER
   global CATEGORICAL_FEATURES_ONE_HOT_ENCODER
 
   if use_fitted_encoders is True:
-    load_fitted_encoders()
+    CONTINUOUS_FEATURE_AGE_SCALER = joblib.load(os.path.join(FITTED_ENCODERS_DIRECTORY, 'continuous_feature_age_scaler.skencoder'))
+    CONTINUOUS_FEATURE_BODY_TYPE_SCALER = joblib.load(os.path.join(FITTED_ENCODERS_DIRECTORY, 'continuous_feature_body_type_scaler.skencoder'))
+    CONTINUOUS_FEATURE_DIET_SCALER = joblib.load(os.path.join(FITTED_ENCODERS_DIRECTORY, 'continuous_feature_diet_scaler.skencoder'))
+    CONTINUOUS_FEATURE_DRINKS_SCALER = joblib.load(os.path.join(FITTED_ENCODERS_DIRECTORY, 'continuous_feature_drinks_scaler.skencoder'))
+    CONTINUOUS_FEATURE_DRUGS_SCALER = joblib.load(os.path.join(FITTED_ENCODERS_DIRECTORY, 'continuous_feature_drugs_scaler.skencoder'))
+    CONTINUOUS_FEATURE_EDUCATION_SCALER = joblib.load(os.path.join(FITTED_ENCODERS_DIRECTORY, 'continuous_feature_education_scaler.skencoder'))
+    CONTINUOUS_FEATURE_SMOKES_SCALER = joblib.load(os.path.join(FITTED_ENCODERS_DIRECTORY, 'continuous_feature_smokes_scaler.skencoder'))
+
+    CATEGORICAL_FEATURES_ONE_HOT_ENCODER = joblib.load(os.path.join(FITTED_ENCODERS_DIRECTORY, 'categorical_features_one_hot_encoder.skencoder'))
   else:
+    # Initialize new encoders.
+    CONTINUOUS_FEATURE_AGE_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = CONTINUOUS_FEATURE_AGE_SCALER_RANGE)
+    CONTINUOUS_FEATURE_BODY_TYPE_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = CONTINUOUS_FEATURE_BODY_TYPE_SCALER_RANGE)
+    CONTINUOUS_FEATURE_DIET_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = CONTINUOUS_FEATURE_DIET_SCALER_RANGE)
+    CONTINUOUS_FEATURE_DRINKS_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = CONTINUOUS_FEATURE_DRINKS_SCALER_RANGE)
+    CONTINUOUS_FEATURE_DRUGS_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = CONTINUOUS_FEATURE_DRUGS_SCALER_RANGE)
+    CONTINUOUS_FEATURE_EDUCATION_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = CONTINUOUS_FEATURE_EDUCATION_SCALER_RANGE)
+    CONTINUOUS_FEATURE_SMOKES_SCALER = sklearn.preprocessing.MinMaxScaler(feature_range = CONTINUOUS_FEATURE_SMOKES_SCALER_RANGE)
+
     CATEGORICAL_FEATURES_ONE_HOT_ENCODER = sklearn.preprocessing.OneHotEncoder(sparse = False)
 
-def load_fitted_encoders():
-  global CATEGORICAL_FEATURES_ONE_HOT_ENCODER
-
-  CATEGORICAL_FEATURES_ONE_HOT_ENCODER = joblib.load(os.path.join(FITTED_ENCODERS_DIRECTORY, 'one_hot_encoder.skencoder'))
-
 def save_fitted_encoders():
-  joblib.dump(CATEGORICAL_FEATURES_ONE_HOT_ENCODER, os.path.join(FITTED_ENCODERS_DIRECTORY, 'one_hot_encoder.skencoder'))
+  joblib.dump(CONTINUOUS_FEATURE_AGE_SCALER, os.path.join(FITTED_ENCODERS_DIRECTORY, 'continuous_feature_age_scaler.skencoder'))
+  joblib.dump(CONTINUOUS_FEATURE_BODY_TYPE_SCALER, os.path.join(FITTED_ENCODERS_DIRECTORY, 'continuous_feature_body_type_scaler.skencoder'))
+  joblib.dump(CONTINUOUS_FEATURE_DIET_SCALER, os.path.join(FITTED_ENCODERS_DIRECTORY, 'continuous_feature_diet_scaler.skencoder'))
+  joblib.dump(CONTINUOUS_FEATURE_DRINKS_SCALER, os.path.join(FITTED_ENCODERS_DIRECTORY, 'continuous_feature_drinks_scaler.skencoder'))
+  joblib.dump(CONTINUOUS_FEATURE_DRUGS_SCALER, os.path.join(FITTED_ENCODERS_DIRECTORY, 'continuous_feature_drugs_scaler.skencoder'))
+  joblib.dump(CONTINUOUS_FEATURE_EDUCATION_SCALER, os.path.join(FITTED_ENCODERS_DIRECTORY, 'continuous_feature_education_scaler.skencoder'))
+  joblib.dump(CONTINUOUS_FEATURE_SMOKES_SCALER, os.path.join(FITTED_ENCODERS_DIRECTORY, 'continuous_feature_smokes_scaler.skencoder'))
+
+  joblib.dump(CATEGORICAL_FEATURES_ONE_HOT_ENCODER, os.path.join(FITTED_ENCODERS_DIRECTORY, 'categorical_features_one_hot_encoder.skencoder'))
