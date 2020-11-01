@@ -155,12 +155,15 @@ INPUT_DATA_COLUMNS_TO_USE = [
   # String
   # 50 missing values (~0%)
   # 7,643 unique values: english, etc.
+  # Drop the rows with a missing value. It's only 50, so not losing much in the grand scheme of things.
   # Consolidate similar values to the 9 most common ones to reduce unique values, and trim to one language each,
   # prioritizing the first mentioned one, on the (I believe correct) assumption that it's their strongest one.
   # Later on if might be nice to allow for the model to consider multiple languages, though.
   # Replace missing values with english, as this is a US data set and almost all in the dataset speak it (either
   # primarily or secondarily).
-  # Don't encode, pass this through exactly as we are going to use this for a direct value look-up.
+  # Don't encode, pass this through exactly as we are going to use this for a direct value look-up, which will filter
+  # down to rows that include the input language. Note that that is before the consolidation, and so factors in
+  # bilingual speakers.
   'speaks'
 ]
 
@@ -253,25 +256,31 @@ FEATURE_SORT_ORDER = [
 ]
 
 def load_input_data():
-  return pd.concat([pd.read_csv(
+  input_data = pd.concat([pd.read_csv(
     input_data_file_path,
     header = 0,
     names = INPUT_DATA_COLUMN_NAMES,
     usecols = INPUT_DATA_COLUMNS_TO_USE
   ) for input_data_file_path in INPUT_DATA_FILE_PATHS], ignore_index = True)
 
+  input_data = filter_and_drop_relationship_status(input_data)
+
+  # Drop the tiny number (50) of rows that don't have a value for this feature.
+  input_data = input_data[input_data['speaks'].notna()]
+
+  input_data = reindex_data_frame(input_data)
+
+  return input_data
+
 # After dropping rows, use this to re-index the data frame. Need to use this so that concatenation of dataframes can be
 # done cleanly. Make sure to preserve the "input" index.
 def reindex_data_frame(data_frame):
-  data_frame.reset_index(drop = False, inplace = True)
-  input_index = data_frame.loc[data_frame['index'] == 'input'].index[0]
-  data_frame.rename(index = { input_index: 'input' }, inplace = True)
-  data_frame.drop('index', axis = 1, inplace = True)
+  data_frame.reset_index(drop = True, inplace = True)
 
   return data_frame
 
 def preprocess_input_data(data_frame, use_fitted_encoders):
-  data_frame = filter_and_drop_relationship_status(data_frame)
+  data_frame = reindex_data_frame(data_frame)
   data_frame = consolidate_values(data_frame)
   data_frame = split_and_drop_offspring(data_frame)
   data_frame = split_and_drop_pets(data_frame)
@@ -284,10 +293,6 @@ def preprocess_input_data(data_frame, use_fitted_encoders):
   categorical_features_one_hot_encoded_data_frame = pd.DataFrame(
     CATEGORICAL_FEATURES_ONE_HOT_ENCODER.transform(data_frame[CATEGORICAL_FEATURES_TO_ONE_HOT_ENCODE]),
     columns = CATEGORICAL_FEATURES_ONE_HOT_ENCODER.get_feature_names(input_features = CATEGORICAL_FEATURES_TO_ONE_HOT_ENCODE)
-  )
-  categorical_features_one_hot_encoded_data_frame.rename(
-    index = { (len(categorical_features_one_hot_encoded_data_frame) - 1): 'input' },
-    inplace = True
   )
   data_frame = pd.concat(
     [data_frame, categorical_features_one_hot_encoded_data_frame],
@@ -344,8 +349,6 @@ def filter_and_drop_relationship_status(data_frame):
   relationship_statuses_to_drop = ['unknown', 'seeing someone', 'married']
   data_frame = data_frame.drop(data_frame[data_frame['relationship_status'].isin(relationship_statuses_to_drop)].index)
   data_frame.drop('relationship_status', axis = 1, inplace = True)
-
-  data_frame = reindex_data_frame(data_frame)
 
   return data_frame
 

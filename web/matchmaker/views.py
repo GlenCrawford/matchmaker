@@ -35,7 +35,7 @@ def matches(request):
         profile_form.cleaned_data['smokes'],
         profile_form.cleaned_data['speaks']
       ],
-      force_training = True,
+      force_training = False,
       matches_to_retrieve = 50
     )
 

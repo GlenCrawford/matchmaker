@@ -1,3 +1,4 @@
+import pandas as pd
 from sklearn.neighbors import NearestNeighbors
 from scipy import stats
 
@@ -7,26 +8,20 @@ from . import utilities as Utilities
 
 def execute(input_data, force_training, matches_to_retrieve):
   population_data_frame = DataPreprocessing.load_input_data()
-  population_data_frame = add_input_data_to_population(input_data, population_data_frame)
-  population_data_frame = DataPreprocessing.preprocess_input_data(population_data_frame, use_fitted_encoders = True)
 
-  # Now they have been preprocessed together, extract out the input row as a data frame.
-  input_data_frame = population_data_frame.loc[['input']]
-  population_data_frame.drop('input', inplace = True)
-
-  # print(input_data_frame)
-  # exit()
-
-  candidates_data_frame = apply_direct_lookups(input_data_frame, population_data_frame)
+  candidates_data_frame = apply_direct_lookups(input_data, population_data_frame)
 
   # If there are no candidates to search for similarity within after applying the direct lookups, stop here.
   if len(candidates_data_frame) == 0:
-    return input_data_frame, []
+    return input_data, []
 
   nearest_neighbors_model = Serialization.load_model()
 
   # If there is no pre-trained model, always train a new one. If there is, use it unless forced to re-train a new one.
-  if (nearest_neighbors_model is None) or force_training:
+  train_model = (nearest_neighbors_model is None) or force_training
+  if train_model:
+    population_data_frame = DataPreprocessing.preprocess_input_data(population_data_frame, use_fitted_encoders = False)
+
     # By default, return the distances of all rows. This will be quite inefficient, so override this when looking for a
     # smaller subset by specifying a smaller number when invoking .kneighbors.
     # A formula of "minkowski" and p of 2 makes for a Euclidean distance metric.
@@ -39,6 +34,11 @@ def execute(input_data, force_training, matches_to_retrieve):
     ).fit(population_data_frame.loc[:, ~population_data_frame.columns.isin(DataPreprocessing.DIRECT_LOOKUP_FEATURES)])
 
     Serialization.save_model(nearest_neighbors_model)
+
+  # Convert the input data vector into a dataframe and pre-process, using pre-fitted encoders.
+  input_data.pop(1) # Remove relationship_status.
+  input_data_frame = pd.DataFrame([input_data], columns = candidates_data_frame.columns)
+  input_data_frame = DataPreprocessing.preprocess_input_data(input_data_frame, use_fitted_encoders = True)
 
   # Get the similarity/distances of the entire population for the input.
   population_distances, population_indices = nearest_neighbors_model.kneighbors(
@@ -84,6 +84,11 @@ def execute(input_data, force_training, matches_to_retrieve):
   # Fetch the neighbors' rows from the population data frame.
   nearest_neighbors_data_frame = population_data_frame.iloc[nearest_neighbors_indices].copy()
 
+  # If we didn't fit the model, then the population never got preprocessed. But we still want to do value consolidation
+  # and things for display purposes. So preprocess just the nearest neighbour results.
+  if not train_model:
+    nearest_neighbors_data_frame = DataPreprocessing.preprocess_input_data(nearest_neighbors_data_frame, use_fitted_encoders = True)
+
   # Reverse some of the data preprocessing to make the data frames prettier for output.
   input_data_frame, nearest_neighbors_data_frame = map(
     Utilities.reverse_preprocessing,
@@ -95,16 +100,11 @@ def execute(input_data, force_training, matches_to_retrieve):
 
   return input_data_frame, nearest_neighbors_data_frame
 
-def add_input_data_to_population(input_data, population_data_frame):
-  population_data_frame.loc['input'] = input_data
-
-  return population_data_frame
-
 # Apply pure logic-based filters to the population for features that must be exact, not merely similar.
-def apply_direct_lookups(input_data_frame, population_data_frame):
-  input_sex = input_data_frame.iloc[0]['sex']
-  input_sexual_orientation = input_data_frame.iloc[0]['sexual_orientation']
-  input_speaks = input_data_frame.iloc[0]['speaks']
+def apply_direct_lookups(input_data, population_data_frame):
+  input_sex = input_data[2]
+  input_sexual_orientation = input_data[3]
+  input_speaks = input_data[14]
 
   candidates_data_frame = population_data_frame
 
@@ -148,7 +148,8 @@ def apply_direct_lookups(input_data_frame, population_data_frame):
         ((candidates_data_frame['sex'] == 'f') & candidates_data_frame['sexual_orientation'].isin(['gay', 'bisexual']))
       ]
 
-  # Filter by the input language.
-  candidates_data_frame = candidates_data_frame[candidates_data_frame['speaks'] == input_speaks]
+  # Filter by the input language. This is a comma-separated list of languages; filter down to any row that includes the
+  # input language, meaning there will be at least one language in common.
+  candidates_data_frame = candidates_data_frame[candidates_data_frame['speaks'].str.contains(input_speaks)]
 
   return candidates_data_frame
