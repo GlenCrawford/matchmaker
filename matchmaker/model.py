@@ -22,12 +22,10 @@ def execute(input_data, force_training, matches_to_retrieve):
   if train_model:
     population_data_frame = DataPreprocessing.preprocess_input_data(population_data_frame, use_fitted_encoders = False)
 
-    # By default, return the distances of all rows. This will be quite inefficient, so override this when looking for a
-    # smaller subset by specifying a smaller number when invoking .kneighbors.
+    # Fit and save the model, trained with the entire population.
     # A formula of "minkowski" and p of 2 makes for a Euclidean distance metric.
     # https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.NearestNeighbors.html
     nearest_neighbors_model = NearestNeighbors(
-      n_neighbors = len(population_data_frame),
       algorithm = 'auto',
       metric = 'minkowski',
       p = 2
@@ -40,32 +38,33 @@ def execute(input_data, force_training, matches_to_retrieve):
   input_data_frame = pd.DataFrame([input_data], columns = candidates_data_frame.columns)
   input_data_frame = DataPreprocessing.preprocess_input_data(input_data_frame, use_fitted_encoders = True)
 
-  # Get the similarity/distances of the entire population for the input.
-  population_distances, population_indices = nearest_neighbors_model.kneighbors(
-    input_data_frame.loc[:, ~input_data_frame.columns.isin(DataPreprocessing.DIRECT_LOOKUP_FEATURES)]
-  )
+  # Fetch the indices of the nearest neighbors to the input. This is among the entire population, which will need to be
+  # filtered down to candidates, so get more than we need to ensure there are enough to get the amount that we want.
+  population_indices = nearest_neighbors_model.kneighbors(
+    input_data_frame.loc[:, ~input_data_frame.columns.isin(DataPreprocessing.DIRECT_LOOKUP_FEATURES)],
+    n_neighbors = (matches_to_retrieve * 5),
+    return_distance = False
+  )[0]
 
-  population_indices = population_indices[0]
-
-  # We did inference for the entire population, now we need to reduce that down to only the candidates and filter down
+  # We did inference among the entire population, now we need to reduce that down to only the candidates and filter down
   # to the X number of results that we want.
   #
   # Note that population_indices are the indices (not labels) of the row in the population data frame on which the model
   # was fitted.
   #
-  # The returned indices and distances are sorted by distance in ascending order, so nearest first.
+  # The returned indices are sorted by distance in ascending order, so nearest first.
 
-  # Reduce the population indices down to only those that are candidates.
-  candidates_indices = []
+  nearest_neighbors_indices = []
 
   for index, population_index in enumerate(population_indices):
     population_label = population_data_frame.index[population_index]
 
     if population_label in candidates_data_frame.index:
-      candidates_indices.append(population_index)
+      nearest_neighbors_indices.append(population_index)
 
-  # Slice out only the desired number of candidates.
-  nearest_neighbors_indices = candidates_indices[:matches_to_retrieve]
+      # Stop once we have enough.
+      if len(nearest_neighbors_indices) >= matches_to_retrieve:
+        break
 
   # Fetch the neighbors' rows from the population data frame.
   nearest_neighbors_data_frame = population_data_frame.iloc[nearest_neighbors_indices].copy()
