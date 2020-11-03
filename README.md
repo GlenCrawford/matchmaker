@@ -67,6 +67,14 @@ $ python manage.py runserver
 
 And then open [http://localhost:8000/](http://localhost:8000/).
 
+## Test
+
+Unit testing is in place where appropriate, such as for data preprocessing, calculating match scores, etc. The tests are implemented with Python's [unittest](https://docs.python.org/3/library/unittest.html) standard library.
+
+```bash
+$ python -m unittest discover -v
+```
+
 ## Dataset credits
 
 The dataset used in this project was obtained from [Larxel on Kaggle](https://www.kaggle.com/andrewmvd/okcupid-profiles). In turn, that dataset was sourced from [Albert Y. Kim's GitHub repository](https://github.com/rudeboybert/JSE_OkCupid) which was created for the publication [OkCupid Profile Data for Introductory Statistics and Data Science Courses](http://www.amstat.org/publications/jse/v23n2/kim.pdf) (Journal of Statistics Education, July 2015, [Volume 23, Number 2](http://www.amstat.org/publications/jse/contents_2015.html)) by Albert Y. Kim and Adriana Escobedo-Land:
