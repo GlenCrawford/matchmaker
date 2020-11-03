@@ -28,7 +28,7 @@ class Match:
   # The following are decorator methods, one per attribute.
 
   def score(self):
-    return f'{self.__score:.2f}'
+    return f'{self.__score:.0f}'
 
   def age(self):
     return f'{self.__age:.0f}'

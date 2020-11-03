@@ -4,7 +4,7 @@
       <div class="card">
         <div class="card-body">
           <h5 class="card-title">{{ match.name }} ({{ match.age }})</h5>
-          <h6 class="card-subtitle mb-2 text-muted">Score: {{ match.score }}% <small><em>(<a tabindex="0" data-toggle="popover" data-placement="right" data-trigger="focus" title="What is the score?" data-content="This score represents the rank of this match compared to you. It is less of an absolute similarity score between you and the match, and more of its percentile/ranking among all possible candidates.">what's this?</a>)</em></small></h6>
+          <h6 class="card-subtitle mb-2 text-muted">Score: {{ match.score }}% <small><em>(<a tabindex="0" data-toggle="popover" data-placement="right" data-trigger="focus" title="What is the score?" data-content="This is a percentage score of the absolute similarity between what you entered (what you are plus what you're looking for) and the match. The higher the score, the better the match!">what's this?</a>)</em></small></h6>
           <h6 class="card-subtitle mb-2 text-muted">{{ match.sex }}, {{ match.sexual_orientation }}</h6>
           <h6 class="card-subtitle mb-2 text-muted">{{ match.ethnicity }}, speaks {{ match.speaks }}</h6>
         </div>

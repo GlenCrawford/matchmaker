@@ -1,8 +1,8 @@
 import pandas as pd
 from sklearn.neighbors import NearestNeighbors
-from scipy import stats
 
 from . import data_preprocessing as DataPreprocessing
+from . import match_score_calculator as MatchScoreCalculator
 from . import serialization as Serialization
 from . import utilities as Utilities
 
@@ -46,7 +46,6 @@ def execute(input_data, force_training, matches_to_retrieve):
   )
 
   population_indices = population_indices[0]
-  population_distances = population_distances[0]
 
   # We did inference for the entire population, now we need to reduce that down to only the candidates and filter down
   # to the X number of results that we want.
@@ -56,30 +55,17 @@ def execute(input_data, force_training, matches_to_retrieve):
   #
   # The returned indices and distances are sorted by distance in ascending order, so nearest first.
 
-  # Reduce the population indices and distances down to only those that are candidates.
+  # Reduce the population indices down to only those that are candidates.
   candidates_indices = []
-  candidates_distances = []
 
   for index, population_index in enumerate(population_indices):
-    population_distance = population_distances[index]
-
     population_label = population_data_frame.index[population_index]
 
     if population_label in candidates_data_frame.index:
       candidates_indices.append(population_index)
-      candidates_distances.append(population_distance)
 
   # Slice out only the desired number of candidates.
   nearest_neighbors_indices = candidates_indices[:matches_to_retrieve]
-  nearest_neighbors_distances = candidates_distances[:matches_to_retrieve]
-
-  # Calculate a "similarity score" of each neighbor. This is not the absolute similarity of the neighbor from the target
-  # one, it's more of its percentile ranking within the distances of all candidates, meaning that it's effectively its
-  # ranking within the candidates, converted to a percentage/score.
-  nearest_neighbors_similarity_score = [
-    round((100 - stats.percentileofscore(candidates_distances, distance, 'rank')), 2)
-    for distance in nearest_neighbors_distances
-  ]
 
   # Fetch the neighbors' rows from the population data frame.
   nearest_neighbors_data_frame = population_data_frame.iloc[nearest_neighbors_indices].copy()
@@ -89,14 +75,17 @@ def execute(input_data, force_training, matches_to_retrieve):
   if not train_model:
     nearest_neighbors_data_frame = DataPreprocessing.preprocess_input_data(nearest_neighbors_data_frame, use_fitted_encoders = True)
 
+  nearest_neighbors_match_scores = MatchScoreCalculator.calculate_match_score(input_data_frame, nearest_neighbors_data_frame)
+
   # Reverse some of the data preprocessing to make the data frames prettier for output.
   input_data_frame, nearest_neighbors_data_frame = map(
     Utilities.reverse_preprocessing,
     (input_data_frame, nearest_neighbors_data_frame)
   )
 
-  # Zip the similarity scores into the nearest neighbors as the first column.
-  nearest_neighbors_data_frame.insert(loc = 0, column = 'score', value = nearest_neighbors_similarity_score)
+  # Zip the match scores into the nearest neighbors as the first column and sort by them.
+  nearest_neighbors_data_frame.insert(loc = 0, column = 'score', value = nearest_neighbors_match_scores)
+  nearest_neighbors_data_frame.sort_values(by = 'score', ascending = False, inplace = True, ignore_index = True)
 
   return input_data_frame, nearest_neighbors_data_frame
 
